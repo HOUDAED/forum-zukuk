@@ -1,32 +1,30 @@
 #!/bin/bash
 
-# 🚀 Script de démarrage rapide pour Forum Zukuk Auth
+# 🚀 Script de démarrage rapide pour Forum Zukuk Auth (Go)
 
 echo "📦 Forum Zukuk - Système d'Authentification"
 echo "==========================================="
 echo ""
 
-# Vérifier Node.js
-if ! command -v node &> /dev/null; then
-    echo "❌ Node.js n'est pas installé. Visite https://nodejs.org/"
+# Vérifier Go
+if ! command -v go &> /dev/null; then
+    echo "❌ Go n'est pas installé. Visite https://golang.org/"
     exit 1
 fi
 
-echo "✅ Node.js détecté: $(node --version)"
+echo "✅ Go détecté: $(go version)"
 echo ""
 
-# Vérifier package.json
-if [ ! -f "package.json" ]; then
-    echo "❌ package.json non trouvé"
+# Vérifier go.mod
+if [ ! -f "go.mod" ]; then
+    echo "❌ go.mod non trouvé"
     exit 1
 fi
 
-# Installer les dépendances si nécessaire
-if [ ! -d "node_modules" ]; then
-    echo "📥 Installation des dépendances..."
-    npm install
-    echo ""
-fi
+# Télécharger les dépendances
+echo "📥 Téléchargement des dépendances Go..."
+go mod tidy
+echo ""
 
 # Vérifier .env
 if [ ! -f ".env" ]; then
@@ -54,10 +52,5 @@ echo ""
 echo "💡 Note: Les fichiers HTML doivent être servis via HTTP"
 echo "   (pas en file:// pour que fetch fonctionne)"
 echo ""
-echo "⚠️  Pour servir les fichiers HTML:"
-echo "   Terminal 1: npm start"
-echo "   Terminal 2: npx http-server -p 8080"
-echo "   Puis ouvrir: http://localhost:8080/auth.html"
-echo ""
 
-npm start
+go run main.go
