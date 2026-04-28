@@ -14,14 +14,12 @@ import (
 	"forum-zukuk/utils"
 )
 
-// Store pour les utilisateurs et OTPs (en mémoire pour cette démo)
 var (
 	users   []*models.User
 	tempOTP = make(map[string]*models.OTPRecord)
 	mu      sync.RWMutex
 )
 
-// Login gère la connexion avec OTP
 func Login(c *gin.Context) {
 	var req models.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -29,13 +27,11 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// Validation
 	if !utils.ValidateEmail(req.Email) {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Email invalide."})
 		return
 	}
 
-	// Chercher l'utilisateur
 	mu.RLock()
 	var user *models.User
 	for _, u := range users {
@@ -51,7 +47,6 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// Générer OTP
 	otp := generateOTP()
 	mu.Lock()
 	tempOTP[req.Email] = &models.OTPRecord{
@@ -60,7 +55,6 @@ func Login(c *gin.Context) {
 	}
 	mu.Unlock()
 
-	// Envoyer l'email
 	if err := utils.SendOTPEmail(req.Email, otp); err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Erreur lors de l'envoi de l'email."})
 		return
@@ -72,7 +66,6 @@ func Login(c *gin.Context) {
 	})
 }
 
-// VerifyOTP vérifie le code OTP
 func VerifyOTP(c *gin.Context) {
 	var req models.VerifyOTPRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -80,7 +73,6 @@ func VerifyOTP(c *gin.Context) {
 		return
 	}
 
-	// Vérifier l'OTP
 	mu.Lock()
 	record, exists := tempOTP[req.Email]
 	if exists {
@@ -93,7 +85,6 @@ func VerifyOTP(c *gin.Context) {
 		return
 	}
 
-	// Chercher l'utilisateur et générer le token
 	mu.RLock()
 	var user *models.User
 	for _, u := range users {
@@ -126,7 +117,6 @@ func VerifyOTP(c *gin.Context) {
 	})
 }
 
-// Register enregistre un nouvel utilisateur
 func Register(c *gin.Context) {
 	var req models.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -134,7 +124,6 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	// Validations
 	if !utils.ValidateEmail(req.Email) {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Email invalide."})
 		return
@@ -156,7 +145,6 @@ func Register(c *gin.Context) {
 	}
 
 	mu.RLock()
-	// Vérifier si l'email existe déjà
 	for _, u := range users {
 		if u.Email == req.Email {
 			mu.RUnlock()
@@ -165,7 +153,6 @@ func Register(c *gin.Context) {
 		}
 	}
 
-	// Vérifier si le pseudo existe déjà
 	for _, u := range users {
 		if u.Pseudo == req.Pseudo {
 			mu.RUnlock()
@@ -175,14 +162,12 @@ func Register(c *gin.Context) {
 	}
 	mu.RUnlock()
 
-	// Hasher le mot de passe
 	hashedPassword, err := hashPassword(req.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Erreur lors du traitement du mot de passe."})
 		return
 	}
 
-	// Créer le nouvel utilisateur
 	newUser := &models.User{
 		ID:         time.Now().UnixMilli(),
 		Pseudo:     req.Pseudo,
@@ -196,7 +181,6 @@ func Register(c *gin.Context) {
 	users = append(users, newUser)
 	mu.Unlock()
 
-	// Générer et envoyer l'OTP
 	otp := generateOTP()
 	mu.Lock()
 	tempOTP[req.Email] = &models.OTPRecord{
@@ -339,12 +323,9 @@ func SchoolCallback(c *gin.Context) {
 	})
 }
 
-// Health check endpoint
 func Health(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "OK"})
 }
-
-// Fonctions utilitaires
 
 func hashPassword(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), 10)

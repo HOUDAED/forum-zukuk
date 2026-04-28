@@ -7,7 +7,6 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-// SendOTPEmail envoie un code OTP par email
 func SendOTPEmail(email, code string) error {
 	m := gomail.NewMessage()
 	m.SetHeader("From", os.Getenv("EMAIL_USER"))
@@ -34,7 +33,6 @@ func SendOTPEmail(email, code string) error {
 	return nil
 }
 
-// SendWelcomeEmail envoie un email de bienvenue avec le code OTP
 func SendWelcomeEmail(pseudo, email, code string) error {
 	m := gomail.NewMessage()
 	m.SetHeader("From", os.Getenv("EMAIL_USER"))
@@ -63,7 +61,5 @@ func SendWelcomeEmail(pseudo, email, code string) error {
 }
 
 func getEmailPort() int {
-	// Pour gmail: 587 (SMTP)
-	// Pour d'autres services, adapter selon les besoins
 	return 587
 }

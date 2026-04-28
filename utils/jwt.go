@@ -10,7 +10,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// GenerateToken génère un JWT token
 func GenerateToken(user *models.User) (string, error) {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
@@ -33,7 +32,6 @@ func GenerateToken(user *models.User) (string, error) {
 	return tokenString, nil
 }
 
-// VerifyToken vérifie et parse un JWT token
 func VerifyToken(tokenString string) (*models.TokenClaims, error) {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {

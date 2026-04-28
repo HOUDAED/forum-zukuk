@@ -8,7 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RateLimiter structure pour le rate limiting
 type RateLimiter struct {
 	requests map[string][]*time.Time
 	mu       sync.Mutex
@@ -16,7 +15,6 @@ type RateLimiter struct {
 	window   time.Duration
 }
 
-// NewRateLimiter crée un nouveau rate limiter
 func NewRateLimiter(maxRequests int, window time.Duration) *RateLimiter {
 	return &RateLimiter{
 		requests: make(map[string][]*time.Time),
@@ -25,7 +23,6 @@ func NewRateLimiter(maxRequests int, window time.Duration) *RateLimiter {
 	}
 }
 
-// Limit middleware pour le rate limiting
 func (rl *RateLimiter) Limit() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ip := c.ClientIP()
@@ -38,7 +35,6 @@ func (rl *RateLimiter) Limit() gin.HandlerFunc {
 			rl.requests[ip] = make([]*time.Time, 0)
 		}
 
-		// Nettoyer les requêtes anciennes
 		validRequests := make([]*time.Time, 0)
 		for _, reqTime := range rl.requests[ip] {
 			if now.Sub(*reqTime) < rl.window {
