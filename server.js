@@ -11,16 +11,13 @@ dotenv.config();
 
 const app = express();
 
-// Middleware
 app.use(express.json());
 app.use(cors());
 
-// Servir les fichiers statiques depuis les dossiers auth/ et sign/
 app.use('/auth', express.static(path.join(__dirname, 'auth')));
 app.use('/sign', express.static(path.join(__dirname, 'sign')));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Rate limiting
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 5,
@@ -32,7 +29,6 @@ const registerLimiter = rateLimit({
     max: 3
 });
 
-// Configuration Nodemailer
 const transporter = nodemailer.createTransport({
     service: process.env.EMAIL_SERVICE || 'gmail',
     auth: {
@@ -44,7 +40,6 @@ const transporter = nodemailer.createTransport({
 const users = [];
 const tempOTP = {};
 
-// Validation helper
 function validateEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
@@ -208,7 +203,6 @@ async function sendWelcomeEmail(pseudo, email, code) {
     }
 }
 
-// Routes OAuth (Google)
 app.get('/api/auth/google', (req, res) => {
     res.json({ 
         error: 'OAuth Google non configuré',
@@ -290,27 +284,22 @@ app.post('/api/auth/school-callback', async (req, res) => {
     }
 });
 
-// Endpoint santé
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK' });
 });
 
-// Route racine
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'auth', 'auth.html'));
 });
 
-// Redirection /auth.html vers /auth/auth.html
 app.get('/auth.html', (req, res) => {
     res.redirect('/auth/auth.html');
 });
 
-// Redirection /sign.html vers /sign/sign.html
 app.get('/sign.html', (req, res) => {
     res.redirect('/sign/sign.html');
 });
 
-// Démarrage du serveur
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Serveur lancé sur le port ${PORT}`);
