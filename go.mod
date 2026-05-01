@@ -1,4 +1,4 @@
-module zukuk
+module zukuk-forum
 
 go 1.22.2
 
