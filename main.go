@@ -36,7 +36,7 @@ func main() {
 	})
 
 	api := router.Group("/api")
-	limiter := middleware.RateLimit(5, time.Minute)
+	limiter := middleware.RateLimit(10, time.Minute)
 
 	auth := api.Group("/auth")
 	{
@@ -57,6 +57,20 @@ func main() {
 	}
 
 	router.Static("/uploads", filepath.Join(".", "database", "uploads"))
+	router.Static("/frontend", filepath.Join(".", "frontend"))
+
+	router.GET("/", func(c *gin.Context) {
+		c.File(filepath.Join(".", "frontend", "html", "index.html"))
+	})
+	router.GET("/login", func(c *gin.Context) {
+		c.File(filepath.Join(".", "frontend", "html", "login.html"))
+	})
+	router.GET("/register", func(c *gin.Context) {
+		c.File(filepath.Join(".", "frontend", "html", "register.html"))
+	})
+	router.GET("/profile", func(c *gin.Context) {
+		c.File(filepath.Join(".", "frontend", "html", "profile.html"))
+	})
 
 	port := os.Getenv("PORT")
 	if port == "" {
