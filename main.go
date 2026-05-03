@@ -1,27 +1,69 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
-	"zukuk-forum/backend/database"
+	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/gin-gonic/gin"
+
+	"forum-zukuk/backend/database"
+	"forum-zukuk/backend/handlers"
+	"forum-zukuk/backend/middleware"
 )
 
 func main() {
 	database.Init()
 
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"ok","db":"connected"}`))
+	router := gin.Default()
+	router.Use(func(c *gin.Context) {
+		origin := os.Getenv("ALLOWED_ORIGIN")
+		if origin == "" {
+			origin = "*"
+		}
+		c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+		c.Next()
 	})
 
-	fs := http.FileServer(http.Dir("./static"))
-	mux.Handle("/static/", http.StripPrefix("/static/", fs))
+	api := router.Group("/api")
+	limiter := middleware.RateLimit(5, time.Minute)
 
-	log.Println("Serveur démarré sur http://localhost:8080")
-	if err := http.ListenAndServe(":8080", mux); err != nil {
-		log.Fatal("Erreur serveur :", err)
+	auth := api.Group("/auth")
+	{
+		auth.POST("/register", limiter, handlers.Register)
+		auth.POST("/login", limiter, handlers.Login)
+		auth.POST("/logout", middleware.RequireAuth(), handlers.Logout)
+	}
+
+	api.GET("/health", handlers.Health)
+
+	protected := api.Group("/")
+	protected.Use(middleware.RequireAuth())
+	{
+		protected.GET("/me", handlers.GetMe)
+		protected.PUT("/me", handlers.UpdateProfile)
+		protected.DELETE("/me", handlers.DeleteAccount)
+		protected.POST("/me/avatar", handlers.UploadAvatar)
+	}
+
+	router.Static("/uploads", filepath.Join(".", "database", "uploads"))
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	fmt.Printf("Serveur Zukuk demarre sur http://localhost:%s\n", port)
+	if err := router.Run(":" + port); err != nil {
+		log.Fatalf("Erreur demarrage serveur: %v", err)
 	}
 }
