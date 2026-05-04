@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zukuk - Profil</title>
+    <link rel="stylesheet" href="/frontend/css/auth.css">
+</head>
+<body>
+    <div class="bg-gradients"></div>
+
+    <div class="header-top">
+        <div class="logo-container">
+            <div class="logo-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" stroke="none" fill="currentColor"/></svg>
+            </div>
+            Zukuk
+        </div>
+        <h1 class="main-title">Mon profil</h1>
+        <p class="sub-title" id="profile-subtitle">Chargement...</p>
+    </div>
+
+    <div class="auth-card profile-card">
+        <div class="dialogue-box active">
+            <img id="profile-avatar" class="profile-avatar" alt="">
+
+            <div class="profile-grid">
+                <label>Pseudo<input id="profile-pseudo" class="profile-input" type="text" autocomplete="off"></label>
+                <label>Email<input id="profile-email" class="profile-input" type="email" autocomplete="off"></label>
+                <label>Mot de passe actuel<input id="profile-current-password" class="profile-input" type="password"></label>
+                <label>Nouveau mot de passe<input id="profile-password" class="profile-input" type="password"></label>
+                <label>Confirmer le mot de passe<input id="profile-confirm-password" class="profile-input" type="password"></label>
+                <label>Photo de profil<input id="profile-avatar-file" class="profile-input" type="file" accept="image/*"></label>
+            </div>
+
+            <div class="info-box" id="profile-message" hidden></div>
+
+            <div class="profile-actions">
+                <button class="btn-primary" id="profile-save">Mettre à jour</button>
+                <button class="btn-secondary" id="profile-logout">Se déconnecter</button>
+                <button class="btn-danger" id="profile-delete">Supprimer mon compte</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/frontend/js/script.js"></script>
+</body>
+</html>
