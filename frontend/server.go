@@ -13,17 +13,18 @@ func main() {
 
 	staticDir := filepath.Join(".", "frontend")
 
-	mux.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir(filepath.Join(staticDir, "css")))))
-	mux.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.Dir(filepath.Join(staticDir, "js")))))
+	// CORRECTION ICI : On ajoute "/frontend" dans les routes pour correspondre à tes fichiers HTML
+	mux.Handle("/frontend/css/", http.StripPrefix("/frontend/css/", http.FileServer(http.Dir(filepath.Join(staticDir, "css")))))
+	mux.Handle("/frontend/js/", http.StripPrefix("/frontend/js/", http.FileServer(http.Dir(filepath.Join(staticDir, "js")))))
 
 	pages := map[string]string{
-		"/":                  "index.html",
-		"/login":             "login.html",
-		"/register":          "register.html",
-		"/board":             "board.html",
-		"/profile":           "profile.html",
-		"/forgot-password":   "forgot-password.html",
-		"/reset-password":    "reset-password.html",
+		"/":                "index.html",
+		"/login":           "login.html",
+		"/register":        "register.html",
+		"/board":           "board.html",
+		"/profile":         "profile.html",
+		"/forgot-password": "forgot-password.html",
+		"/reset-password":  "reset-password.html",
 	}
 
 	for route, file := range pages {

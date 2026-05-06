@@ -109,22 +109,49 @@ func Login(c *gin.Context) {
 
 	var userID int
 	var hash string
+
+	// On prépare les infos de connexion
+	ip := c.ClientIP()
+	userAgent := c.Request.UserAgent()
+
+	// 1. On cherche si l'utilisateur existe
 	err := database.ZUKUKDB.QueryRow(`
 		SELECT id, password_hash FROM users
 		WHERE (email = ? OR pseudo = ?) AND deleted_at IS NULL`,
 		strings.ToLower(identifier), identifier,
 	).Scan(&userID, &hash)
-	if err != nil || bcrypt.CompareHashAndPassword([]byte(hash), []byte(req.Password)) != nil {
+	
+	if err != nil {
+		// L'utilisateur n'existe pas, on ne peut pas lier cet échec à un profil précis
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Identifiants incorrects."})
 		return
 	}
 
+	// 2. On vérifie le mot de passe (L'utilisateur existe)
+	if bcrypt.CompareHashAndPassword([]byte(hash), []byte(req.Password)) != nil {
+		// Le mot de passe est faux : on enregistre un ÉCHEC pour cet utilisateur
+		database.ZUKUKDB.Exec(
+			`INSERT INTO connection_history (user_id, ip_address, user_agent, status) VALUES (?, ?, ?, ?)`,
+			userID, ip, userAgent, "Échouée",
+		)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Identifiants incorrects."})
+		return
+	}
+
+	// 3. Tout est bon : on crée la session
 	token, err := createSession(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur création session."})
 		return
 	}
 	setSessionCookie(c, token)
+
+	// On enregistre un SUCCÈS
+	database.ZUKUKDB.Exec(
+		`INSERT INTO connection_history (user_id, ip_address, user_agent, status) VALUES (?, ?, ?, ?)`,
+		userID, ip, userAgent, "Réussie",
+	)
+
 	c.JSON(http.StatusOK, gin.H{"message": "Connecté."})
 }
 
@@ -215,15 +242,25 @@ func UpdateProfile(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": utils.PasswordPolicyMessage()})
 			return
 		}
+
 		var currentHash string
 		if err := database.ZUKUKDB.QueryRow(`SELECT password_hash FROM users WHERE id = ? AND deleted_at IS NULL`, userID).Scan(&currentHash); err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Utilisateur introuvable."})
 			return
 		}
+
+		// Vérification du mot de passe actuel pour autoriser la modification
 		if bcrypt.CompareHashAndPassword([]byte(currentHash), []byte(req.CurrentPassword)) != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Mot de passe actuel incorrect."})
 			return
 		}
+
+		// SÉCURITÉ : Vérifie que le nouveau mot de passe est différent de l'actuel
+		if bcrypt.CompareHashAndPassword([]byte(currentHash), []byte(req.Password)) == nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Le nouveau mot de passe doit être différent du mot de passe actuel."})
+			return
+		}
+
 		hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur interne."})

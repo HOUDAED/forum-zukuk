@@ -63,6 +63,8 @@ func main() {
 		protected.DELETE("/me", handlers.DeleteAccount)
 		protected.POST("/me/avatar", handlers.UploadAvatar)
 		protected.POST("/mood", handlers.UpdateMood)
+		protected.GET("/me/activity", handlers.GetMyActivity)
+		protected.GET("/me/connections", handlers.GetConnectionHistory)
 		protected.POST("/discussion", handlers.CreateDiscussion)
 		protected.POST("/discussion/:id/like", handlers.LikeDiscussion)
 	}

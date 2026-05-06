@@ -118,6 +118,17 @@ func createTables() {
 			id   INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT    NOT NULL UNIQUE
 		)`,
+		`CREATE TABLE IF NOT EXISTS connection_history (
+			id         INTEGER  PRIMARY KEY AUTOINCREMENT,
+			user_id    INTEGER  NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			ip_address TEXT     NOT NULL,
+			user_agent TEXT     NOT NULL,
+			status     TEXT     NOT NULL,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_connection_history_user ON connection_history(user_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_connection_history_created ON connection_history(created_at DESC)`,
+		
 		`CREATE TABLE IF NOT EXISTS activities (
 			id          INTEGER  PRIMARY KEY AUTOINCREMENT,
 			created_by  INTEGER  REFERENCES users(id) ON DELETE SET NULL,
