@@ -1,9 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 
 :root {
-    --primary: #8b5cf6;      /* Violet principal */
-    --primary-light: #a78bfa; /* Violet clair */
-    --secondary: #60a5fa;    /* Bleu */
+    --primary: #8b5cf6;
+    --primary-light: #a78bfa;
+    --secondary: #60a5fa;
     --text-dark: #1e293b;
     --text-gray: #64748b;
     --bg-page: #f8fafc;
@@ -24,25 +24,30 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: center; /* Par défaut, centré pour l'authentification */
     overflow-x: hidden;
     position: relative;
+    padding: 2rem 0;
 }
 
-/* --- FOND ANIMÉ STYLE MAQUETTE --- */
+/* NOUVEAU : La règle spéciale pour le profil ! */
+body.profile-page {
+    justify-content: flex-start; /* Force la page à commencer en haut */
+    padding-top: 3rem; /* Ajoute un peu d'espace au-dessus de la bannière */
+}
+
 .bg-gradients {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
     z-index: -1;
     overflow: hidden;
-    background: 
+    background:
         radial-gradient(circle at 15% 50%, rgba(167, 139, 250, 0.15), transparent 25%),
         radial-gradient(circle at 85% 30%, rgba(96, 165, 250, 0.15), transparent 25%),
         radial-gradient(circle at 50% 80%, rgba(52, 211, 153, 0.1), transparent 20%);
     filter: blur(40px);
 }
 
-/* --- EN-TÊTE ET LOGO --- */
 .header-top {
     text-align: center;
     margin-bottom: 2rem;
@@ -78,7 +83,7 @@ body {
     position: absolute;
     top: -4px; right: -4px;
     width: 12px; height: 12px;
-    background: #34d399; /* Petit point vert de la maquette */
+    background: #34d399;
     border-radius: 50%;
     border: 2px solid var(--bg-page);
 }
@@ -90,6 +95,7 @@ body {
     font-weight: 700;
     background: linear-gradient(90deg, #60a5fa, #a78bfa);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 0.5rem;
 }
@@ -100,7 +106,6 @@ body {
     font-weight: 400;
 }
 
-/* --- NOUVEAUX ÉLÉMENTS APAISANTS --- */
 .breathe-indicator {
     display: inline-block;
     width: 8px;
@@ -113,7 +118,7 @@ body {
 
 @keyframes breathe {
     0%, 100% { transform: scale(1); opacity: 0.4; }
-    50% { transform: scale(1.6); opacity: 1; box-shadow: 0 0 12px rgba(52, 211, 153, 0.6); }
+    50%       { transform: scale(1.6); opacity: 1; box-shadow: 0 0 12px rgba(52, 211, 153, 0.6); }
 }
 
 .reassurance-text {
@@ -127,7 +132,6 @@ body {
     justify-content: center;
 }
 
-/* --- CARTE BLANCHE --- */
 .auth-card {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px);
@@ -156,7 +160,6 @@ body {
     transform: translateY(0);
 }
 
-/* --- L'INTERFACE CONVERSATIONNELLE (LUMINEUSE) --- */
 .sentence {
     font-size: 1.4rem;
     line-height: 2.2;
@@ -166,7 +169,7 @@ body {
     margin-bottom: 2.5rem;
 }
 
-/* Champs de texte invisibles (Blanks) */
+/* ── Champs inline ─────────────────────────────────────────── */
 .inline-input {
     background: transparent;
     border: none;
@@ -177,7 +180,7 @@ body {
     font-weight: 600;
     text-align: center;
     outline: none;
-    width: 160px; /* Largeur de base */
+    width: 160px;
     padding: 0 5px;
     margin: 0 4px;
     transition: border-color 0.3s ease, width 0.2s ease;
@@ -192,7 +195,80 @@ body {
     border-bottom-color: var(--primary);
 }
 
-/* Petit encart info comme sur la maquette d'inscription */
+/* ── Toggle mot de passe — pages auth (inline) ─────────────── */
+.password-wrapper {
+    display: inline-flex;
+    align-items: center;
+    border-bottom: 2px solid var(--border-color);
+    margin: 0 4px;
+    transition: border-color 0.3s ease;
+}
+
+.password-wrapper:focus-within {
+    border-bottom-color: var(--primary);
+}
+
+.password-wrapper .inline-input {
+    border-bottom: none;
+    margin: 0;
+}
+
+.toggle-password {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0 4px;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    transition: color 0.2s;
+}
+
+.toggle-password:hover {
+    color: var(--primary);
+}
+
+.toggle-password svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* ── Toggle mot de passe — page profil (modern) ────────────── */
+.modern-input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.modern-input-wrapper .modern-input {
+    padding-right: 48px;
+}
+
+.modern-toggle-password {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    padding: 0;
+    transition: color 0.2s;
+}
+
+.modern-toggle-password:hover {
+    color: var(--primary);
+}
+
+.modern-toggle-password svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* ── Info box ───────────────────────────────────────────────── */
 .info-box {
     background: #f8fafc;
     border: 1px solid var(--border-color);
@@ -207,7 +283,6 @@ body {
     margin-bottom: 1.5rem;
 }
 
-/* --- OPTIONS DE CONNEXION (Mémoriser / Oubli) --- */
 .login-options {
     display: flex;
     justify-content: space-between;
@@ -236,9 +311,7 @@ body {
     user-select: none;
 }
 
-.checkbox-label input {
-    display: none;
-}
+.checkbox-label input { display: none; }
 
 .custom-checkbox {
     width: 20px;
@@ -275,7 +348,6 @@ body {
     transform: scale(1);
 }
 
-/* Bouton principal */
 .btn-primary {
     width: 100%;
     background: linear-gradient(135deg, var(--secondary), var(--primary-light));
@@ -299,7 +371,6 @@ body {
     box-shadow: 0 10px 20px rgba(139, 92, 246, 0.2);
 }
 
-/* Liens réciproques */
 .switch-link {
     margin-top: 2rem;
     font-size: 0.95rem;
@@ -322,7 +393,6 @@ body {
     text-decoration: underline;
 }
 
-/* Footer */
 .footer-note {
     margin-top: 3rem;
     font-size: 0.9rem;
@@ -332,66 +402,177 @@ body {
     gap: 6px;
 }
 
-.profile-card {
-    max-width: 760px;
-}
-
-.profile-avatar {
-    width: 96px;
-    height: 96px;
-    border-radius: 50%;
-    object-fit: cover;
-    background: #e2e8f0;
-    margin-bottom: 1.5rem;
-}
-
-.profile-grid {
+/* ── Profil — Bento layout ──────────────────────────────────── */
+.profile-dashboard {
+    max-width: 1100px;
     width: 100%;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.5rem;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 0 20px 40px 20px;
+    z-index: 10;
 }
 
-.profile-grid label {
-    color: var(--text-gray);
+.profile-cover {
+    height: 180px;
+    border-radius: 28px;
+    background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 50%, #34d399 100%);
+    position: relative;
+    margin-bottom: 60px;
+    box-shadow: 0 10px 30px rgba(167, 139, 250, 0.2);
+}
+
+.profile-avatar-large {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    border: 6px solid #ffffff; /* MIS A JOUR : Un blanc pur pour bien détacher l'avatar */
+    position: absolute;
+    bottom: -65px;
+    left: 40px;
+    background: #e2e8f0;
+    object-fit: cover;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    z-index: 2;
+}
+
+.bento-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.bento-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 28px;
+    padding: 32px;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.bento-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 8px;
+}
+
+.modern-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.modern-input-group label {
     font-size: 0.9rem;
     font-weight: 600;
+    color: var(--text-gray);
+    margin-left: 4px;
 }
 
-.profile-input {
-    width: 100%;
-    margin-top: 0.45rem;
-    padding: 0.9rem 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    font: inherit;
+.modern-input {
+    background: #f1f5f9;
+    border: 2px solid transparent;
+    border-radius: 16px;
+    padding: 14px 18px;
+    font-size: 1rem;
+    font-family: inherit;
     color: var(--text-dark);
+    width: 100%;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modern-input:focus {
     background: white;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15);
     outline: none;
 }
 
-.profile-input:focus {
-    border-color: var(--primary-light);
-    box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.18);
+.segmented-control {
+    display: flex;
+    background: #f1f5f9;
+    padding: 6px;
+    border-radius: 16px;
+    margin-bottom: 16px;
 }
 
-.profile-actions {
-    width: 100%;
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 0.75rem;
+.seg-btn {
+    flex: 1;
+    text-align: center;
+    padding: 12px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-gray);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
+
+.seg-btn.active {
+    background: white;
+    color: var(--primary);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.bento-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.bento-list-item {
+    background: white;
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.bento-list-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+}
+
+.badge {
+    padding: 4px 12px;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.badge-success { background: #dcfce7; color: #166534; }
+.badge-error   { background: #fee2e2; color: #991b1b; }
 
 .btn-secondary,
 .btn-danger {
     border: none;
-    padding: 1rem;
+    padding: 1.1rem;
     border-radius: 14px;
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-secondary {
@@ -404,10 +585,19 @@ body {
     color: #b91c1c;
 }
 
+.btn-secondary:hover,
+.btn-danger:hover {
+    transform: translateY(-2px);
+}
+
+@media (max-width: 900px) {
+    .bento-grid { grid-template-columns: 1fr; }
+    .profile-avatar-large { left: 50%; transform: translateX(-50%); }
+    .profile-cover { margin-bottom: 80px; }
+}
+
 @media (max-width: 640px) {
     .auth-card { padding: 2rem; border-radius: 20px; }
     .sentence { font-size: 1.2rem; }
     .inline-input { font-size: 1.2rem; }
-    .profile-grid,
-    .profile-actions { grid-template-columns: 1fr; }
 }
