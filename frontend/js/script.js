@@ -1,6 +1,57 @@
 const API_BASE = 'http://localhost:8081';
 const $ = (selector) => document.querySelector(selector);
 
+const EYE_ICON     = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const EYE_OFF_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+
+function wrapInlinePasswords() {
+    document.querySelectorAll('input[type="password"].inline-input').forEach(input => {
+        if (input.parentElement.classList.contains('password-wrapper')) return;
+        const wrapper = document.createElement('span');
+        wrapper.className = 'password-wrapper';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'toggle-password';
+        btn.setAttribute('aria-label', 'Afficher le mot de passe');
+        btn.innerHTML = EYE_ICON;
+        btn.addEventListener('click', () => {
+            const show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            btn.innerHTML = show ? EYE_OFF_ICON : EYE_ICON;
+        });
+        input.parentNode.insertBefore(wrapper, input);
+        wrapper.appendChild(input);
+        wrapper.appendChild(btn);
+    });
+}
+
+
+function wrapModernPasswords() {
+    document.querySelectorAll('input[type="password"].modern-input').forEach(input => {
+        if (input.parentElement.classList.contains('modern-input-wrapper')) return;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'modern-input-wrapper';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'modern-toggle-password';
+        btn.setAttribute('aria-label', 'Afficher le mot de passe');
+        btn.innerHTML = EYE_ICON;
+        btn.addEventListener('click', () => {
+            const show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            btn.innerHTML = show ? EYE_OFF_ICON : EYE_ICON;
+        });
+        input.parentNode.insertBefore(wrapper, input);
+        wrapper.appendChild(input);
+        wrapper.appendChild(btn);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    wrapInlinePasswords();
+    wrapModernPasswords();
+});
+
 const dynamicInputs = document.querySelectorAll(".dynamic-width");
 if (dynamicInputs.length > 0) {
     const canvasContext = document.createElement("canvas").getContext("2d");
@@ -18,6 +69,7 @@ if (dynamicInputs.length > 0) {
         adjustWidth.call(input);
     });
 }
+
 
 function showMessage(element, text, isError = false) {
     if (!element) return;
@@ -84,7 +136,6 @@ function initLogin() {
     };
 
     button.addEventListener("click", submit);
-
     $("#login-password")?.addEventListener("keydown", (e) => {
         if (e.key === "Enter") submit();
     });
@@ -125,8 +176,7 @@ async function loadProfile() {
     const avatar = $("#profile-avatar");
     if (avatar) {
         if (me.avatar_url) {
-            avatar.src    = `${API_BASE}${me.avatar_url}`;
-            avatar.hidden = false;
+            avatar.src = `${API_BASE}${me.avatar_url}`;
         } else {
             const seed = me.pseudo || "ZukukUser";
             avatar.src = `https://api.dicebear.com/7.x/notionists/svg?seed=${seed}&backgroundColor=eef2ff`;
@@ -139,60 +189,56 @@ async function loadProfile() {
         try {
             const history = await api("/api/me/connections");
             connectionsList.innerHTML = "";
-
             if (history && history.length > 0) {
                 history.forEach((conn, index) => {
                     const date = new Date(conn.created_at).toLocaleString('fr-FR', {
                         day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
                     }).replace('.', '');
-                    
                     let device = "Appareil inconnu";
-                    if (conn.user_agent.includes("Windows")) device = "PC Windows";
-                    else if (conn.user_agent.includes("Mac")) device = "Mac";
-                    else if (conn.user_agent.includes("Linux")) device = "Linux";
-                    else if (conn.user_agent.includes("Android")) device = "Android";
+                    if (conn.user_agent.includes("Windows"))                               device = "PC Windows";
+                    else if (conn.user_agent.includes("Mac"))                              device = "Mac";
+                    else if (conn.user_agent.includes("Linux"))                            device = "Linux";
+                    else if (conn.user_agent.includes("Android"))                          device = "Android";
                     else if (conn.user_agent.includes("iPhone") || conn.user_agent.includes("iPad")) device = "iPhone";
 
                     const statusBadge = conn.status === "Réussie"
                         ? '<span class="badge badge-success">Réussie</span>'
                         : '<span class="badge badge-error">Échouée</span>';
-
-                    const isLatest = (index === 0 && conn.status === "Réussie") 
-                        ? '<span style="color: var(--primary); font-weight: 700; font-size: 0.8rem; margin-left: auto;">Actuelle</span>' 
+                    const isLatest = (index === 0 && conn.status === "Réussie")
+                        ? '<span style="color:var(--primary);font-weight:700;font-size:0.8rem;margin-left:auto;">Actuelle</span>'
                         : '';
 
                     connectionsList.innerHTML += `
                         <li class="bento-list-item">
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <strong style="color: var(--text-dark);">${device}</strong> 
+                            <div style="display:flex;align-items:center;gap:12px;">
+                                <strong style="color:var(--text-dark);">${device}</strong>
                                 ${statusBadge}
                                 ${isLatest}
                             </div>
-                            <div style="display: flex; gap: 16px; font-size: 0.85rem; color: var(--text-gray); margin-top: 4px;">
-                                <span style="display: flex; align-items: center; gap: 4px;">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                            <div style="display:flex;gap:16px;font-size:0.85rem;color:var(--text-gray);margin-top:4px;">
+                                <span style="display:flex;align-items:center;gap:4px;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                                     ${conn.ip_address}
                                 </span>
-                                <span style="display: flex; align-items: center; gap: 4px;">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                <span style="display:flex;align-items:center;gap:4px;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                                     ${date}
                                 </span>
                             </div>
-                        </li>
-                    `;
+                        </li>`;
                 });
             } else {
-                connectionsList.innerHTML = `<li style="color: var(--text-gray);">Aucun historique.</li>`;
+                connectionsList.innerHTML = `<li style="color:var(--text-gray);">Aucun historique.</li>`;
             }
-        } catch (error) {
-            connectionsList.innerHTML = `<li style="color: #991b1b;">Impossible de charger.</li>`;
+        } catch {
+            connectionsList.innerHTML = `<li style="color:#991b1b;">Impossible de charger.</li>`;
         }
     }
 
-    const tabPosts = $("#tab-posts");
+    const tabPosts    = $("#tab-posts");
     const tabComments = $("#tab-comments");
-    const listPosts = $("#user-posts-list");
-    const listComments = $("#user-comments-list");
+    const listPosts   = $("#user-posts-list");
+    const listComments= $("#user-comments-list");
 
     if (tabPosts && tabComments) {
         tabPosts.addEventListener("click", () => {
@@ -201,7 +247,6 @@ async function loadProfile() {
             listPosts.style.display = "flex";
             listComments.style.display = "none";
         });
-
         tabComments.addEventListener("click", () => {
             tabComments.classList.add("active");
             tabPosts.classList.remove("active");
@@ -220,16 +265,15 @@ async function loadProfile() {
                 activity.posts.forEach(post => {
                     const date = new Date(post.created_at).toLocaleDateString('fr-FR');
                     listPosts.innerHTML += `
-                        <li class="bento-list-item" style="flex-direction: row; justify-content: space-between; align-items: center;">
-                            <div style="display: flex; flex-direction: column; gap: 4px;">
-                                <strong style="color: var(--text-dark);">${post.title}</strong>
-                                <span style="font-size: 0.8rem; color: var(--text-gray);">Publié le ${date}</span>
+                        <li class="bento-list-item" style="flex-direction:row;justify-content:space-between;align-items:center;">
+                            <div style="display:flex;flex-direction:column;gap:4px;">
+                                <strong style="color:var(--text-dark);">${post.title}</strong>
+                                <span style="font-size:0.8rem;color:var(--text-gray);">Publié le ${date}</span>
                             </div>
-                        </li>
-                    `;
+                        </li>`;
                 });
             } else {
-                listPosts.innerHTML = `<li style="color: var(--text-gray);">Aucune discussion publiée.</li>`;
+                listPosts.innerHTML = `<li style="color:var(--text-gray);">Aucune discussion publiée.</li>`;
             }
 
             if (activity.comments && activity.comments.length > 0) {
@@ -237,18 +281,17 @@ async function loadProfile() {
                     const date = new Date(comment.created_at).toLocaleDateString('fr-FR');
                     listComments.innerHTML += `
                         <li class="bento-list-item">
-                            <span style="font-size: 0.8rem; color: var(--primary); font-weight: 600;">Sur : ${comment.post_title}</span>
-                            <p style="font-size: 0.95rem; color: var(--text-dark); margin: 0;">"${comment.content}"</p>
-                            <span style="font-size: 0.8rem; color: var(--text-gray);">Le ${date}</span>
-                        </li>
-                    `;
+                            <span style="font-size:0.8rem;color:var(--primary);font-weight:600;">Sur : ${comment.post_title}</span>
+                            <p style="font-size:0.95rem;color:var(--text-dark);margin:0;">"${comment.content}"</p>
+                            <span style="font-size:0.8rem;color:var(--text-gray);">Le ${date}</span>
+                        </li>`;
                 });
             } else {
-                listComments.innerHTML = `<li style="color: var(--text-gray);">Aucun commentaire écrit.</li>`;
+                listComments.innerHTML = `<li style="color:var(--text-gray);">Aucun commentaire écrit.</li>`;
             }
-        } catch (error) {
-            listPosts.innerHTML = `<li style="color: #991b1b;">Impossible de charger.</li>`;
-            listComments.innerHTML = `<li style="color: #991b1b;">Impossible de charger.</li>`;
+        } catch {
+            listPosts.innerHTML    = `<li style="color:#991b1b;">Impossible de charger.</li>`;
+            listComments.innerHTML = `<li style="color:#991b1b;">Impossible de charger.</li>`;
         }
     }
 
@@ -282,23 +325,15 @@ function initProfile() {
 
         try {
             if (Object.keys(payload).length > 0) {
-                await api("/api/me", {
-                    method: "PUT",
-                    body: JSON.stringify(payload),
-                });
+                await api("/api/me", { method: "PUT", body: JSON.stringify(payload) });
             }
 
             const file = $("#profile-avatar-file")?.files?.[0];
             if (file) {
-                if (file.size > 2 * 1024 * 1024) {
-                    throw new Error("La photo ne doit pas dépasser 2 Mo.");
-                }
-
+                if (file.size > 2 * 1024 * 1024) throw new Error("La photo ne doit pas dépasser 2 Mo.");
                 const formData = new FormData();
                 formData.append("avatar", file);
-
                 const avatarData = await uploadFile("/api/me/avatar", formData);
-
                 const avatarImg = $("#profile-avatar");
                 if (avatarImg && avatarData.avatar_url) {
                     avatarImg.src    = `${API_BASE}${avatarData.avatar_url}`;
@@ -309,8 +344,7 @@ function initProfile() {
             showMessage(message, "Profil mis à jour.");
             await loadProfile();
 
-            const pwdFields = ["profile-current-password", "profile-password", "profile-confirm-password"];
-            pwdFields.forEach(id => {
+            ["profile-current-password", "profile-password", "profile-confirm-password"].forEach(id => {
                 const el = $(`#${id}`);
                 if (el) el.value = "";
             });
@@ -348,9 +382,7 @@ function initForgotPassword() {
         try {
             await api("/api/auth/forgot-password", {
                 method: "POST",
-                body: JSON.stringify({
-                    email: $("#forgot-email")?.value?.trim() || "",
-                }),
+                body: JSON.stringify({ email: $("#forgot-email")?.value?.trim() || "" }),
             });
             showMessage(message, "Si cet email existe, un lien de réinitialisation a été envoyé. Vérifie tes spams.");
         } catch (error) {
@@ -363,15 +395,14 @@ function initResetPassword() {
     const button = $("#reset-submit");
     if (!button) return;
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
+    const token   = new URLSearchParams(window.location.search).get('token');
     const message = $("#reset-message");
 
     if (!token) {
         showMessage(message, "Le lien de réinitialisation est invalide ou introuvable.", true);
-        button.disabled = true;
+        button.disabled      = true;
         button.style.opacity = "0.5";
-        button.style.cursor = "not-allowed";
+        button.style.cursor  = "not-allowed";
         return;
     }
 
@@ -380,9 +411,9 @@ function initResetPassword() {
             await api("/api/auth/reset-password", {
                 method: "POST",
                 body: JSON.stringify({
-                    token: token,
-                    password: $("#reset-password-input")?.value || "",
-                    confirmPassword: $("#reset-confirm")?.value || "",
+                    token,
+                    password:        $("#reset-password-input")?.value || "",
+                    confirmPassword: $("#reset-confirm")?.value        || "",
                 }),
             });
             showMessage(message, "Mot de passe mis à jour. Tu vas être redirigé vers la connexion.");
@@ -392,6 +423,7 @@ function initResetPassword() {
         }
     });
 }
+
 
 initHome();
 initLogin();
