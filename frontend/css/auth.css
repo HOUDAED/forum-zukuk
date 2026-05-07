@@ -18,19 +18,22 @@
 
 body {
     font-family: 'Outfit', sans-serif;
-    background-color: var(--bg-page);
+    background-color: #f0f4f8;
     color: var(--text-dark);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center; /* Par défaut, centré pour l'authentification */
+    justify-content: center;
     overflow-x: hidden;
     position: relative;
-    padding: 2rem 0;
+    background-image: 
+        radial-gradient(circle at 10% 20%, #d4dff9 0%, transparent 50%),
+        radial-gradient(circle at 90% 10%, #f0d9f9 0%, transparent 50%),
+        radial-gradient(circle at 50% 80%, #d9f5ed 0%, transparent 50%),
+        radial-gradient(circle at 80% 60%, #d4dff9 0%, transparent 50%);
 }
 
-/* NOUVEAU : La règle spéciale pour le profil ! */
 body.profile-page {
     justify-content: flex-start; /* Force la page à commencer en haut */
     padding-top: 3rem; /* Ajoute un peu d'espace au-dessus de la bannière */
@@ -161,12 +164,12 @@ body.profile-page {
 }
 
 .sentence {
-    font-size: 1.4rem;
-    line-height: 2.2;
+    font-size: 1.15rem;
+    line-height: 1.85;
     font-weight: 400;
     text-align: center;
     color: #334155;
-    margin-bottom: 2.5rem;
+    margin-bottom: 1.7rem;
 }
 
 /* ── Champs inline ─────────────────────────────────────────── */
@@ -176,11 +179,11 @@ body.profile-page {
     border-bottom: 2px solid var(--border-color);
     color: var(--primary);
     font-family: inherit;
-    font-size: 1.4rem;
+    font-size: 1.15rem;
     font-weight: 600;
     text-align: center;
     outline: none;
-    width: 160px;
+    width: 150px;
     padding: 0 5px;
     margin: 0 4px;
     transition: border-color 0.3s ease, width 0.2s ease;
@@ -234,7 +237,6 @@ body.profile-page {
     height: 18px;
 }
 
-/* ── Toggle mot de passe — page profil (modern) ────────────── */
 .modern-input-wrapper {
     position: relative;
     width: 100%;
@@ -268,19 +270,18 @@ body.profile-page {
     height: 18px;
 }
 
-/* ── Info box ───────────────────────────────────────────────── */
 .info-box {
     background: #f8fafc;
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    padding: 1rem;
-    font-size: 0.85rem;
+    padding: 0.8rem;
+    font-size: 0.8rem;
     color: var(--text-gray);
     display: flex;
     align-items: center;
     gap: 10px;
     width: 100%;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .login-options {
@@ -288,8 +289,8 @@ body.profile-page {
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    margin-bottom: 2.5rem;
-    font-size: 0.95rem;
+    margin-bottom: 1.8rem;
+    font-size: 0.9rem;
     color: var(--text-gray);
 }
 
@@ -311,7 +312,9 @@ body.profile-page {
     user-select: none;
 }
 
-.checkbox-label input { display: none; }
+.checkbox-label input { 
+    display: none; 
+}
 
 .custom-checkbox {
     width: 20px;
@@ -372,8 +375,8 @@ body.profile-page {
 }
 
 .switch-link {
-    margin-top: 2rem;
-    font-size: 0.95rem;
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
     color: var(--text-gray);
 }
 
