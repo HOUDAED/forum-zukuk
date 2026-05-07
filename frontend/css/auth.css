@@ -1,1 +1,413 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 
+:root {
+    --primary: #8b5cf6;      /* Violet principal */
+    --primary-light: #a78bfa; /* Violet clair */
+    --secondary: #60a5fa;    /* Bleu */
+    --text-dark: #1e293b;
+    --text-gray: #64748b;
+    --bg-page: #f8fafc;
+    --border-color: #e2e8f0;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--bg-page);
+    color: var(--text-dark);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* --- FOND ANIMÉ STYLE MAQUETTE --- */
+.bg-gradients {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: -1;
+    overflow: hidden;
+    background: 
+        radial-gradient(circle at 15% 50%, rgba(167, 139, 250, 0.15), transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(96, 165, 250, 0.15), transparent 25%),
+        radial-gradient(circle at 50% 80%, rgba(52, 211, 153, 0.1), transparent 20%);
+    filter: blur(40px);
+}
+
+/* --- EN-TÊTE ET LOGO --- */
+.header-top {
+    text-align: center;
+    margin-bottom: 2rem;
+    transition: opacity 0.4s ease;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 1.5rem;
+}
+
+.logo-icon {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, var(--secondary), var(--primary-light));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 8px 16px rgba(139, 92, 246, 0.2);
+    position: relative;
+}
+
+.logo-icon::after {
+    content: '';
+    position: absolute;
+    top: -4px; right: -4px;
+    width: 12px; height: 12px;
+    background: #34d399; /* Petit point vert de la maquette */
+    border-radius: 50%;
+    border: 2px solid var(--bg-page);
+}
+
+.logo-icon svg { width: 22px; height: 22px; fill: currentColor; }
+
+.main-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    background: linear-gradient(90deg, #60a5fa, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0.5rem;
+}
+
+.sub-title {
+    color: var(--text-gray);
+    font-size: 1rem;
+    font-weight: 400;
+}
+
+/* --- NOUVEAUX ÉLÉMENTS APAISANTS --- */
+.breathe-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background-color: #34d399;
+    border-radius: 50%;
+    margin-right: 8px;
+    animation: breathe 4s infinite ease-in-out;
+}
+
+@keyframes breathe {
+    0%, 100% { transform: scale(1); opacity: 0.4; }
+    50% { transform: scale(1.6); opacity: 1; box-shadow: 0 0 12px rgba(52, 211, 153, 0.6); }
+}
+
+.reassurance-text {
+    font-size: 0.95rem;
+    color: var(--text-gray);
+    margin-bottom: 1.5rem;
+    text-align: center;
+    font-weight: 400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- CARTE BLANCHE --- */
+.auth-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04);
+    padding: 3rem;
+    width: 100%;
+    max-width: 600px;
+    position: relative;
+    overflow: hidden;
+}
+
+.dialogue-box {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.5s ease;
+}
+
+.dialogue-box.active {
+    display: flex;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* --- L'INTERFACE CONVERSATIONNELLE (LUMINEUSE) --- */
+.sentence {
+    font-size: 1.4rem;
+    line-height: 2.2;
+    font-weight: 400;
+    text-align: center;
+    color: #334155;
+    margin-bottom: 2.5rem;
+}
+
+/* Champs de texte invisibles (Blanks) */
+.inline-input {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--border-color);
+    color: var(--primary);
+    font-family: inherit;
+    font-size: 1.4rem;
+    font-weight: 600;
+    text-align: center;
+    outline: none;
+    width: 160px; /* Largeur de base */
+    padding: 0 5px;
+    margin: 0 4px;
+    transition: border-color 0.3s ease, width 0.2s ease;
+}
+
+.inline-input::placeholder {
+    color: #cbd5e1;
+    font-weight: 400;
+}
+
+.inline-input:focus {
+    border-bottom-color: var(--primary);
+}
+
+/* Petit encart info comme sur la maquette d'inscription */
+.info-box {
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1rem;
+    font-size: 0.85rem;
+    color: var(--text-gray);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 1.5rem;
+}
+
+/* --- OPTIONS DE CONNEXION (Mémoriser / Oubli) --- */
+.login-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 2.5rem;
+    font-size: 0.95rem;
+    color: var(--text-gray);
+}
+
+.login-options a {
+    color: var(--secondary);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.login-options a:hover {
+    color: var(--primary);
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.checkbox-label input {
+    display: none;
+}
+
+.custom-checkbox {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.checkbox-label:hover .custom-checkbox {
+    border-color: var(--primary-light);
+}
+
+.checkbox-label input:checked + .custom-checkbox {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.custom-checkbox svg {
+    width: 12px;
+    height: 12px;
+    stroke: white;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.checkbox-label input:checked + .custom-checkbox svg {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Bouton principal */
+.btn-primary {
+    width: 100%;
+    background: linear-gradient(135deg, var(--secondary), var(--primary-light));
+    color: white;
+    border: none;
+    padding: 1.1rem;
+    border-radius: 14px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(139, 92, 246, 0.2);
+}
+
+/* Liens réciproques */
+.switch-link {
+    margin-top: 2rem;
+    font-size: 0.95rem;
+    color: var(--text-gray);
+}
+
+.switch-link button {
+    background: none;
+    border: none;
+    color: var(--secondary);
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.switch-link button:hover {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+/* Footer */
+.footer-note {
+    margin-top: 3rem;
+    font-size: 0.9rem;
+    color: var(--text-gray);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.profile-card {
+    max-width: 760px;
+}
+
+.profile-avatar {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #e2e8f0;
+    margin-bottom: 1.5rem;
+}
+
+.profile-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.profile-grid label {
+    color: var(--text-gray);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.profile-input {
+    width: 100%;
+    margin-top: 0.45rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    font: inherit;
+    color: var(--text-dark);
+    background: white;
+    outline: none;
+}
+
+.profile-input:focus {
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.18);
+}
+
+.profile-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.btn-secondary,
+.btn-danger {
+    border: none;
+    padding: 1rem;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.btn-secondary {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.btn-danger {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+@media (max-width: 640px) {
+    .auth-card { padding: 2rem; border-radius: 20px; }
+    .sentence { font-size: 1.2rem; }
+    .inline-input { font-size: 1.2rem; }
+    .profile-grid,
+    .profile-actions { grid-template-columns: 1fr; }
+}
