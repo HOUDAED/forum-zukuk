@@ -30,6 +30,41 @@ body {
   overflow: hidden;
 }
 
+body[data-mood="bien"] {
+  --primary-color: #ff9ecd;
+  --secondary-color: #ffd6e8;
+  --bg-light: #fff0f7;
+  --accent-color: #ff6fa3;
+}
+
+body[data-mood="calme"] {
+  --primary-color: #6ee7b7;
+  --secondary-color: #a7f3d0;
+  --bg-light: #ecfdf5;
+  --accent-color: #34d399;
+}
+
+body[data-mood="triste"] {
+  --primary-color: #93c5fd;
+  --secondary-color: #bfdbfe;
+  --bg-light: #eff6ff;
+  --accent-color: #3b82f6;
+}
+
+body[data-mood="anxieux"] {
+  --primary-color: #cbd5e1;
+  --secondary-color: #e2e8f0;
+  --bg-light: #f8fafc;
+  --accent-color: #94a3b8;
+}
+
+body[data-mood="colere"] {
+  --primary-color: #fca5a5;
+  --secondary-color: #fecaca;
+  --bg-light: #fef2f2;
+  --accent-color: #ef4444;
+}
+
 .app-container {
   display: flex;
   height: 100vh;
@@ -315,6 +350,7 @@ body {
   font-weight: 600;
   color: var(--text-dark);
 }
+
 
 .mood-grid {
   display: flex;

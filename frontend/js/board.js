@@ -83,31 +83,32 @@ function renderMoodsLocal() {
 // Fonction pour changer l'humeur ET le fond d'écran
 function selectMood(moodName) {
   currentMood = moodName;
+
+  // Active button
   const buttons = document.querySelectorAll('.mood-button');
-  
-  // Palette de couleurs apaisantes selon l'humeur
+  buttons.forEach((btn) => {
+    btn.classList.toggle('active', btn.textContent.includes(moodName));
+  });
+
+  // Palette de dégradés pour le fond
   const moodColors = {
-    'Bien': 'linear-gradient(135deg, #fdf4ff 0%, #fae8ff 50%, #fce7f3 100%)',      // Rose joyeux
-    'Calme': 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #e0f2fe 100%)',     // Vert/Bleu zen
-    'Triste': 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 50%, #e0e7ff 100%)',    // Bleu doux réconfortant
-    'Anxieux': 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)',   // Gris/Bleu neutre
-    'Colère': 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 50%, #fef08a 100%)',    // Pêche/Soleil apaisant
+    'Bien': 'linear-gradient(135deg, #fdf4ff 0%, #fae8ff 50%, #fce7f3 100%)',
+    'Calme': 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #e0f2fe 100%)',
+    'Triste': 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 50%, #e0e7ff 100%)',
+    'Anxieux': 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)',
+    'Colère': 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 50%, #fef08a 100%)',
     'default': 'linear-gradient(135deg, #eef2ff 0%, #fae8ff 50%, #ecfeff 100%)'
   };
 
-  // Met à jour les boutons
-  buttons.forEach((btn) => {
-    btn.classList.remove('active');
-    if (btn.textContent.includes(moodName)) {
-      btn.classList.add('active');
-    }
-  });
-
-  // Animation douce du fond d'écran
+  // Animation du fond
   const bg = document.querySelector('.background-gradient');
-  bg.style.transition = 'background 1.5s ease-in-out'; // Transition super douce
+  bg.style.transition = 'background 1.5s ease-in-out';
   bg.style.background = moodColors[moodName] || moodColors['default'];
+
+  // 🔥 NOUVEAU : applique le thème global
+  document.body.dataset.mood = moodName.toLowerCase();
 }
+
 
 // Update mood in backend (Route protégée)
 async function updateMoodInBackend(mood) {
