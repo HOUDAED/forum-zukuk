@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 
 	"forum-zukuk/database"
 	"forum-zukuk/api/handlers"
@@ -16,6 +17,10 @@ import (
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("Note: Fichier .env non trouvé")
+	}
+
 	database.Init()
 
 	router := gin.Default()

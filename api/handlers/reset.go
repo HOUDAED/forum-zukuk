@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -46,7 +47,14 @@ func ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	go utils.SendPasswordResetEmail(email, token)
+	go func(targetEmail, resetToken string) {
+		err := utils.SendPasswordResetEmail(targetEmail, resetToken)
+		if err != nil {
+			fmt.Printf("\n❌ [MAILER ERROR] %v\n", err)
+		} else {
+			fmt.Printf("\n✅ [MAILER SUCCESS] Email envoyé à %s\n", targetEmail)
+		}
+	}(email, token)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Si cet email existe, un lien de réinitialisation a été envoyé."})
 }
@@ -94,5 +102,5 @@ func ResetPassword(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Mot de passe mis à jour avec succès. Vous pouvez vous connecter."})
+	c.JSON(http.StatusOK, gin.H{"message": "Mot de passe mis à jour avec succès."})
 }
