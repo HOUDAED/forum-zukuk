@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zukuk - Profil</title>
+    <link rel="stylesheet" href="/frontend/css/auth.css">
+    <style>
+        body.profile-page { padding-top: 0; justify-content: flex-start; }
+
+        /* ── Top bar ── */
+        .public-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .back-link {
+            display: inline-flex; align-items: center; gap: 8px;
+            color: var(--text-gray); text-decoration: none;
+            font-weight: 600; font-size: 0.95rem; transition: color .2s;
+        }
+        .back-link:hover { color: var(--primary); }
+        .back-link svg { width: 18px; height: 18px; }
+
+        /* ── Profile dashboard (reuse bento layout from auth.css) ── */
+        .public-profile-wrapper {
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0 20px 60px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* ── Hero card ── */
+        .hero-card {
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(20px);
+            border-radius: 28px;
+            padding: 32px;
+            border: 1px solid rgba(255,255,255,0.8);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+        .hero-avatar {
+            width: 90px; height: 90px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 32px; font-weight: 700; flex-shrink: 0;
+            overflow: hidden; border: 4px solid white;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        }
+        .hero-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .hero-name { font-size: 1.5rem; font-weight: 700; color: var(--text-dark); margin-bottom: 6px; }
+        .hero-mood {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 5px 12px; border-radius: 20px;
+            font-size: 0.8rem; font-weight: 600; margin-bottom: 12px;
+        }
+        .hero-stats { display: flex; gap: 20px; flex-wrap: wrap; }
+        .hero-stat { display: flex; flex-direction: column; align-items: center; }
+        .hero-stat-value { font-size: 1.3rem; font-weight: 700; color: var(--text-dark); }
+        .hero-stat-label { font-size: 0.72rem; color: var(--text-gray); font-weight: 500; }
+
+        /* ── Grid bento ── */
+        .public-bento {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        /* ── Post item ── */
+        .public-post-item {
+            background: white;
+            border-radius: 16px;
+            padding: 14px 16px;
+            border: 1px solid var(--border-color);
+            display: flex; flex-direction: column; gap: 8px;
+            transition: transform .2s, box-shadow .2s;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .public-post-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+        }
+        .post-item-title { font-size: 0.9rem; font-weight: 600; color: var(--text-dark); }
+        .post-item-meta  { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .post-item-tag   {
+            padding: 3px 9px; border-radius: 20px;
+            font-size: 0.7rem; font-weight: 700; color: white; text-transform: uppercase;
+        }
+        .post-item-stat  { display: flex; align-items: center; gap: 4px; font-size: 0.75rem; color: var(--text-gray); }
+        .post-item-stat svg { width: 12px; height: 12px; }
+        .post-item-date  { font-size: 0.72rem; color: var(--text-gray); margin-left: auto; }
+
+        /* ── Comment item ── */
+        .public-comment-item {
+            background: white;
+            border-radius: 14px;
+            padding: 12px 14px;
+            border: 1px solid var(--border-color);
+            display: flex; flex-direction: column; gap: 6px;
+            transition: transform .2s;
+        }
+        .public-comment-item:hover { transform: translateY(-1px); }
+        .comment-on { font-size: 0.72rem; color: var(--primary); font-weight: 600; }
+        .comment-on a { color: inherit; text-decoration: none; }
+        .comment-on a:hover { text-decoration: underline; }
+        .comment-text { font-size: 0.88rem; color: var(--text-dark); line-height: 1.5; }
+
+        /* ── Empty state ── */
+        .empty { color: var(--text-gray); font-size: 0.9rem; text-align: center; padding: 24px 0; }
+
+        /* ── Loader ── */
+        .page-loader { display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 0;gap:14px; }
+        .spinner { width:32px;height:32px;border:3px solid #e0e7ff;border-top-color:#818cf8;border-radius:50%;animation:spin .8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Mood colors (partagé avec network.css) */
+        .mood-bien    { background:#fae8ff;color:#7c3aed; }
+        .mood-calme   { background:#dcfce7;color:#166534; }
+        .mood-triste  { background:#dbeafe;color:#1d4ed8; }
+        .mood-anxieux { background:#f1f5f9;color:#475569; }
+        .mood-colère  { background:#fef3c7;color:#92400e; }
+        .mood-default { background:#f3f4f6;color:#6b7280; }
+
+        @media (max-width: 640px) {
+            .hero-card { flex-direction: column; text-align: center; }
+            .hero-stats { justify-content: center; }
+            .public-bento { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body class="profile-page">
+    <div class="bg-gradients" aria-hidden="true"></div>
+
+    <!-- Top bar -->
+    <div class="public-topbar">
+        <a class="back-link" href="/network">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Retour à la communauté
+        </a>
+        <a href="/board" style="display:flex;align-items:center;gap:8px;text-decoration:none">
+            <div class="logo-icon" style="width:36px;height:36px">
+                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" stroke="none" fill="currentColor"/></svg>
+            </div>
+            <span style="font-weight:700;font-size:1.1rem;color:var(--secondary)">Zukuk</span>
+        </a>
+    </div>
+
+    <!-- Content (rendered by JS) -->
+    <div class="public-profile-wrapper" id="profileContent">
+        <div class="page-loader">
+            <div class="spinner"></div>
+            <p style="color:#9ca3af">Chargement du profil…</p>
+        </div>
+    </div>
+
+    <script>
+    // ─── Config ──────────────────────────────────────────────────────────────
+    const API_BASE  = 'http://localhost:8081/api';
+    const fetchOpts = { credentials: 'include' };
+
+    const AVATAR_PALETTES = [
+      ['#dbeafe','#1d4ed8'],['#dcfce7','#166534'],['#f3e8ff','#7c3aed'],
+      ['#fef3c7','#92400e'],['#fce7f3','#9d174d'],['#e0f2fe','#0369a1'],
+    ];
+    const MOOD_EMOJIS  = { 'Bien':'😊','Calme':'😌','Triste':'😢','Anxieux':'😰','Colère':'😡' };
+    const MOOD_CLASSES = { 'Bien':'mood-bien','Calme':'mood-calme','Triste':'mood-triste','Anxieux':'mood-anxieux','Colère':'mood-colère' };
+    const TAG_COLORS   = { 'Stress':'#ff5722','Anxiété':'#ff5722','Bien-être':'#00c853','Sport':'#00c853','Solitude':'#9c27b0','Autre':'#6b7280' };
+
+    function avatarColors(name) {
+      const idx = name ? name.charCodeAt(0) % AVATAR_PALETTES.length : 0;
+      return AVATAR_PALETTES[idx];
+    }
+    function initials(name) { return (name||'?').substring(0,2).toUpperCase(); }
+    function escHtml(str) {
+      if (typeof str !== 'string') return '';
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+    }
+    function timeAgo(dateStr) {
+      const diff = (Date.now() - new Date(dateStr)) / 1000;
+      if (diff < 86400)   return `${Math.floor(diff/3600)}h`;
+      if (diff < 2592000) return `${Math.floor(diff/86400)}j`;
+      return new Date(dateStr).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});
+    }
+
+    // ─── Load ────────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', async () => {
+      const parts  = window.location.pathname.split('/');
+      const userId = parts[parts.length - 1];
+      if (!userId || isNaN(parseInt(userId))) {
+        renderError('Profil introuvable.'); return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/network/${userId}`, fetchOpts);
+        if (!res.ok) { renderError('Profil introuvable.'); return; }
+        const data = await res.json();
+        render(data.user, data.posts || [], data.comments || []);
+      } catch (err) {
+        renderError('Erreur lors du chargement.');
+      }
+    });
+
+    // ─── Render ──────────────────────────────────────────────────────────────
+    function render(user, posts, comments) {
+      document.title = `Zukuk — ${user.pseudo}`;
+      const [bgColor, textColor] = avatarColors(user.pseudo);
+
+      const avatarHTML = user.avatar_url
+        ? `<img src="${user.avatar_url}" alt="avatar">`
+        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${bgColor};color:${textColor};font-weight:700;font-size:32px;border-radius:50%">${initials(user.pseudo)}</div>`;
+
+      const moodHTML = user.current_mood
+        ? `<span class="hero-mood ${MOOD_CLASSES[user.current_mood]||'mood-default'}">${MOOD_EMOJIS[user.current_mood]||''} ${escHtml(user.current_mood)}</span>`
+        : '';
+
+      const postsHTML = posts.length === 0
+        ? `<p class="empty">Aucun post public.</p>`
+        : posts.map(p => `
+            <a class="public-post-item" href="/post/${p.id}">
+              <div class="post-item-title">${escHtml(p.title)}</div>
+              <div class="post-item-meta">
+                ${p.category ? `<span class="post-item-tag" style="background:${TAG_COLORS[p.category]||'#6b7280'}">${escHtml(p.category)}</span>` : ''}
+                <span class="post-item-stat">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                  ${p.likes_count}
+                </span>
+                <span class="post-item-stat">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                  ${p.comments_count}
+                </span>
+                <span class="post-item-date">${timeAgo(p.created_at)}</span>
+              </div>
+            </a>`).join('');
+
+      const commentsHTML = comments.length === 0
+        ? `<p class="empty">Aucun commentaire public.</p>`
+        : comments.map(c => `
+            <div class="public-comment-item">
+              <div class="comment-on">Sur : <a href="/post/${c.post_id}">${escHtml(c.post_title)}</a></div>
+              <div class="comment-text">${escHtml(c.content.length > 180 ? c.content.substring(0,180)+'…' : c.content)}</div>
+              <span style="font-size:0.72rem;color:var(--text-gray)">${timeAgo(c.created_at)}</span>
+            </div>`).join('');
+
+      document.getElementById('profileContent').innerHTML = `
+        <!-- Hero -->
+        <div class="hero-card">
+          <div class="hero-avatar">${avatarHTML}</div>
+          <div>
+            <div class="hero-name">${escHtml(user.pseudo)}</div>
+            ${moodHTML}
+            <div class="hero-stats">
+              <div class="hero-stat"><span class="hero-stat-value">${user.posts_count}</span><span class="hero-stat-label">Posts</span></div>
+              <div class="hero-stat"><span class="hero-stat-value">${user.comments_count}</span><span class="hero-stat-label">Commentaires</span></div>
+              <div class="hero-stat"><span class="hero-stat-value">${user.likes_given}</span><span class="hero-stat-label">Likes donnés</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bento -->
+        <div class="public-bento">
+          <!-- Posts -->
+          <div class="bento-card">
+            <div class="bento-header">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+              Discussions publiques
+            </div>
+            <div class="bento-list">${postsHTML}</div>
+          </div>
+
+          <!-- Commentaires -->
+          <div class="bento-card">
+            <div class="bento-header">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+              Commentaires publics
+            </div>
+            <div class="bento-list">${commentsHTML}</div>
+          </div>
+        </div>`;
+    }
+
+    function renderError(msg) {
+      document.getElementById('profileContent').innerHTML = `
+        <div style="text-align:center;padding:80px 20px">
+          <div style="font-size:3rem;margin-bottom:16px">😕</div>
+          <h2 style="color:var(--text-dark);margin-bottom:8px">${escHtml(msg)}</h2>
+          <a href="/network" style="color:var(--secondary);font-weight:600;text-decoration:none">← Retour à la communauté</a>
+        </div>`;
+    }
+    </script>
+</body>
+</html>

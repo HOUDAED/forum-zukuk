@@ -25,6 +25,7 @@ func main() {
 
 	router := gin.Default()
 
+	// ── CORS ────────────────────────────────────────────────────────────────
 	router.Use(func(c *gin.Context) {
 		origin := os.Getenv("FRONTEND_ORIGIN")
 		if origin == "" {
@@ -41,36 +42,71 @@ func main() {
 		c.Next()
 	})
 
+	// ── Static uploads ───────────────────────────────────────────────────────
 	router.Static("/uploads", filepath.Join("..", "database", "uploads"))
 
-	api := router.Group("/api")
+	api     := router.Group("/api")
 	limiter := middleware.RateLimit(10, time.Minute)
 
+	// ── Auth ─────────────────────────────────────────────────────────────────
 	auth := api.Group("/auth")
 	{
-		auth.POST("/register", limiter, handlers.Register)
-		auth.POST("/login", limiter, handlers.Login)
-		auth.POST("/logout", middleware.RequireAuth(), handlers.Logout)
+		auth.POST("/register",        limiter, handlers.Register)
+		auth.POST("/login",           limiter, handlers.Login)
+		auth.POST("/logout",          middleware.RequireAuth(), handlers.Logout)
 		auth.POST("/forgot-password", limiter, handlers.ForgotPassword)
-		auth.POST("/reset-password", handlers.ResetPassword)
+		auth.POST("/reset-password",          handlers.ResetPassword)
 	}
 
-	api.GET("/health", handlers.Health)
-	api.GET("/board", handlers.GetBoardData)
-	api.GET("/quote", handlers.GetRandomQuote)
+	// ── Endpoints publics ────────────────────────────────────────────────────
+	api.GET("/health",         handlers.Health)
+	api.GET("/board",          handlers.GetBoardData)   // rétrocompatibilité
+	api.GET("/quote",          handlers.GetRandomQuote)
+	api.GET("/categories",     handlers.GetCategories)
+
+	// Posts (lecture publique)
+	api.GET("/posts",          handlers.GetPosts)
+	api.GET("/posts/:id",      handlers.GetPost)
+
+	// Réseau / profils publics
+	api.GET("/network",        handlers.GetNetwork)
+	api.GET("/network/:id",    handlers.GetPublicProfile)
+
+	// Rétrocompatibilité board.js v1
 	api.GET("/discussion/:id", handlers.GetDiscussionByID)
 
+	// ── Endpoints protégés ───────────────────────────────────────────────────
 	protected := api.Group("/")
 	protected.Use(middleware.RequireAuth())
 	{
-		protected.GET("/me", handlers.GetMe)
-		protected.PUT("/me", handlers.UpdateProfile)
-		protected.DELETE("/me", handlers.DeleteAccount)
-		protected.POST("/me/avatar", handlers.UploadAvatar)
-		protected.POST("/mood", handlers.UpdateMood)
-		protected.GET("/me/activity", handlers.GetMyActivity)
+		// ── Profil ─────────────────────────────────────────────────────────
+		protected.GET("/me",             handlers.GetMe)
+		protected.PUT("/me",             handlers.UpdateProfile)
+		protected.DELETE("/me",          handlers.DeleteAccount)
+		protected.POST("/me/avatar",     handlers.UploadAvatar)
+		protected.GET("/me/activity",    handlers.GetMyActivity)
 		protected.GET("/me/connections", handlers.GetConnectionHistory)
-		protected.POST("/discussion", handlers.CreateDiscussion)
+
+		// ── Humeur ─────────────────────────────────────────────────────────
+		protected.POST("/mood",              handlers.UpdateMood)       // enregistre + persiste
+		protected.GET("/me/mood-history",    handlers.GetMoodHistory)   // 30 derniers jours
+		protected.GET("/me/mood-stats",      handlers.GetMoodStats)     // répartition 30 jours
+
+		// ── Posts CRUD ─────────────────────────────────────────────────────
+		protected.POST("/posts",           handlers.CreatePost)
+		protected.PUT("/posts/:id",        handlers.UpdatePost)
+		protected.DELETE("/posts/:id",     handlers.DeletePost)
+
+		// Like toggle + vérification
+		protected.POST("/posts/:id/like",  handlers.ToggleLike)
+		protected.GET("/posts/:id/liked",  handlers.GetLikeStatus)
+
+		// ── Commentaires ───────────────────────────────────────────────────
+		protected.POST("/posts/:id/comments", handlers.AddComment)
+		protected.PUT("/comments/:id",        handlers.UpdateComment)
+		protected.DELETE("/comments/:id",     handlers.DeleteComment)
+
+		// Rétrocompatibilité like board.js v1
 		protected.POST("/discussion/:id/like", handlers.LikeDiscussion)
 	}
 

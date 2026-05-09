@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zukuk - Discussion</title>
+    <link rel="stylesheet" href="/frontend/css/board.css">
+    <style>
+        /* ── Layout post page ── */
+        body { overflow: auto; }
+
+        .post-page-wrapper {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 32px 24px 80px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* ── Top nav bar ── */
+        .post-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #6b7280;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: color .2s;
+        }
+        .back-link:hover { color: #818cf8; }
+        .back-link svg { width: 18px; height: 18px; }
+
+        /* ── Post card ── */
+        .post-card {
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(16px);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            border: 1px solid rgba(255,255,255,0.9);
+        }
+        .post-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .post-avatar {
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            background: #f3f4f6;
+            display: flex; align-items: center; justify-content: center;
+            color: #9ca3af; flex-shrink: 0;
+            overflow: hidden;
+        }
+        .post-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .post-avatar svg { width: 24px; height: 24px; }
+        .post-author-block .author-name { font-weight: 700; color: #1f2937; }
+        .post-author-block .author-time { font-size: 0.82rem; color: #9ca3af; }
+        .post-category {
+            margin-left: auto;
+            font-size: 0.75rem; font-weight: 700; color: white;
+            padding: 6px 12px; border-radius: 20px; text-transform: uppercase;
+        }
+        .post-title { font-size: 1.5rem; font-weight: 700; color: #1f2937; margin-bottom: 16px; line-height: 1.3; }
+        .post-content { color: #374151; line-height: 1.75; white-space: pre-wrap; margin-bottom: 24px; }
+        .post-actions-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding-top: 20px;
+            border-top: 1px solid #f3f4f6;
+        }
+        .action-btn {
+            display: flex; align-items: center; gap: 6px;
+            background: none; border: none; cursor: pointer;
+            color: #9ca3af; font-size: 0.9rem; font-weight: 500;
+            padding: 8px 16px; border-radius: 12px; transition: all .2s;
+        }
+        .action-btn:hover { background: #f3f4f6; color: #1f2937; }
+        .action-btn.liked { color: #ef4444; }
+        .action-btn svg { width: 18px; height: 18px; }
+        .action-btn.btn-edit   { margin-left: auto; color: #818cf8; }
+        .action-btn.btn-delete { color: #ef4444; }
+
+        /* ── Comments section ── */
+        .comments-section { display: flex; flex-direction: column; gap: 16px; }
+        .comments-header {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 1.05rem; font-weight: 700; color: #1f2937;
+        }
+        .comments-count-badge {
+            background: #e0e7ff; color: #4f46e5;
+            font-size: 0.75rem; font-weight: 700;
+            padding: 3px 9px; border-radius: 20px;
+        }
+        .comment-card {
+            background: rgba(255,255,255,0.75);
+            border-radius: 16px; padding: 18px 20px;
+            border: 1px solid rgba(255,255,255,0.9);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            transition: box-shadow .2s;
+        }
+        .comment-card:hover { box-shadow: 0 4px 16px rgba(129,140,248,0.1); }
+        .comment-meta {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+        }
+        .comment-avatar {
+            width: 34px; height: 34px; border-radius: 50%;
+            background: #f3f4f6; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; overflow: hidden; color: #9ca3af;
+        }
+        .comment-avatar img  { width:100%;height:100%;object-fit:cover; }
+        .comment-avatar svg  { width:16px;height:16px; }
+        .comment-author      { font-weight: 600; font-size: 0.88rem; color: #1f2937; }
+        .comment-time        { font-size: 0.78rem; color: #9ca3af; }
+        .comment-owner-btns  { margin-left: auto; display: flex; gap: 6px; }
+        .comment-owner-btn   {
+            background: none; border: none; cursor: pointer; padding: 4px;
+            border-radius: 8px; transition: background .2s;
+        }
+        .comment-owner-btn:hover { background: #f3f4f6; }
+        .comment-owner-btn svg { width:15px;height:15px; }
+        .comment-owner-btn.edit-c   { color: #818cf8; }
+        .comment-owner-btn.delete-c { color: #ef4444; }
+        .comment-content { color: #374151; font-size: 0.93rem; line-height: 1.6; white-space: pre-wrap; }
+        .comment-edit-area {
+            width: 100%; border: 2px solid #818cf8; border-radius: 10px;
+            padding: 10px 12px; font-family: inherit; font-size: 0.93rem;
+            color: #1f2937; background: white; resize: vertical; margin-top: 8px;
+        }
+        .comment-edit-area:focus { outline: none; }
+        .comment-edit-actions { display: flex; gap: 8px; margin-top: 8px; }
+        .comment-edit-actions button {
+            padding: 7px 16px; border-radius: 10px; font-size: 0.85rem;
+            font-weight: 600; cursor: pointer; font-family: inherit; border: none;
+        }
+
+        /* ── Comment form ── */
+        .comment-form-card {
+            background: rgba(255,255,255,0.85);
+            border-radius: 20px; padding: 24px;
+            border: 1px solid rgba(255,255,255,0.9);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+        }
+        .comment-form-title { font-weight: 700; color: #1f2937; margin-bottom: 14px; }
+        .comment-textarea {
+            width: 100%; background: #f1f5f9;
+            border: 2px solid transparent; border-radius: 14px;
+            padding: 14px 16px; font-size: 0.95rem; font-family: inherit;
+            color: #1f2937; resize: vertical; min-height: 90px; transition: all .2s;
+        }
+        .comment-textarea:focus { background: white; border-color: #818cf8; outline: none; }
+        .comment-form-footer {
+            display: flex; align-items: center; gap: 12px; margin-top: 12px;
+        }
+        .anon-label {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.88rem; color: #6b7280; cursor: pointer;
+        }
+        .anon-label input { display: none; }
+        .anon-checkbox {
+            width: 18px; height: 18px; border: 2px solid #d1d5db; border-radius: 5px;
+            display: flex; align-items: center; justify-content: center; background: white; flex-shrink: 0;
+        }
+        .anon-checkbox svg { width: 11px; height: 11px; stroke: white; opacity: 0; }
+        .submit-comment-btn {
+            margin-left: auto;
+            background: linear-gradient(135deg,#818cf8,#a78bfa);
+            color: white; border: none; border-radius: 12px;
+            padding: 10px 20px; font-size: 0.9rem; font-weight: 600;
+            font-family: inherit; cursor: pointer; transition: transform .2s, box-shadow .2s;
+        }
+        .submit-comment-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(129,140,248,0.3); }
+
+        /* ── Auth nudge ── */
+        .auth-nudge {
+            background: #eef2ff; border-radius: 16px; padding: 20px 24px;
+            text-align: center; color: #4f46e5; font-weight: 500;
+        }
+        .auth-nudge a { color: #818cf8; font-weight: 700; }
+
+        /* ── Loader ── */
+        .page-loader {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; padding: 80px 0; gap: 16px;
+        }
+        .page-loader .spinner {
+            width: 36px; height: 36px; border: 3px solid #e0e7ff;
+            border-top-color: #818cf8; border-radius: 50%;
+            animation: spin .8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        /* ── Edit-post modal reprise de board.html ── */
+        .modal-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+        .modal-field label { font-size:.85rem;font-weight:600;color:#64748b; }
+        .modal-modern-input {
+            background:#f1f5f9;border:2px solid transparent;border-radius:12px;
+            padding:12px 14px;font-size:.95rem;font-family:inherit;color:#1e293b;width:100%;resize:vertical;
+        }
+        .modal-modern-input:focus { background:white;border-color:#818cf8;outline:none; }
+    </style>
+</head>
+<body>
+    <div class="background-gradient"></div>
+
+    <div class="post-page-wrapper">
+        <!-- Top bar -->
+        <div class="post-topbar">
+            <a class="back-link" href="/board">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Retour au forum
+            </a>
+            <div style="display:flex;align-items:center;gap:12px">
+                <a href="/board" style="display:flex;align-items:center;gap:8px;text-decoration:none">
+                    <div class="logo-badge" style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#8b7cff,#6ee7b7);display:flex;align-items:center;justify-content:center">
+                        <svg style="width:18px;height:18px;color:white" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    </div>
+                    <span style="font-weight:700;color:#3b82f6;font-size:1.1rem">Zukuk</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Post content (rendered by JS) -->
+        <div id="postContainer">
+            <div class="page-loader">
+                <div class="spinner"></div>
+                <p style="color:#9ca3af">Chargement de la discussion…</p>
+            </div>
+        </div>
+
+        <!-- Comments section (rendered by JS) -->
+        <div id="commentsContainer"></div>
+
+        <!-- Comment form (rendered by JS) -->
+        <div id="commentFormContainer"></div>
+    </div>
+
+    <script src="/frontend/js/post.js"></script>
+</body>
+</html>

@@ -5,6 +5,92 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zukuk - Forum Bien-être</title>
     <link rel="stylesheet" href="/frontend/css/board.css">
+    <style>
+        /* ── Search / filter bar ── */
+        .search-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+        .search-input-wrap {
+            flex: 1;
+            min-width: 180px;
+            position: relative;
+        }
+        .search-input-wrap svg {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px; height: 16px;
+            color: #9ca3af;
+            pointer-events: none;
+        }
+        #boardSearch {
+            width: 100%;
+            padding: 11px 14px 11px 38px;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            background: white;
+            color: #1f2937;
+            transition: border-color .2s;
+        }
+        #boardSearch:focus { outline: none; border-color: #818cf8; }
+        .board-select {
+            padding: 10px 12px;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-family: inherit;
+            background: white;
+            color: #374151;
+            cursor: pointer;
+        }
+        .board-select:focus { outline: none; border-color: #818cf8; }
+
+        /* ── Discussion excerpt ── */
+        .discussion-excerpt {
+            font-size: 0.88rem;
+            color: #6b7280;
+            margin: 0 0 12px;
+            line-height: 1.5;
+        }
+
+        /* ── Disabled action ── */
+        .disabled-action { opacity: .4; cursor: not-allowed !important; }
+
+        /* ── Owner buttons ── */
+        .edit-post   { color: #818cf8 !important; }
+        .delete-post { color: #ef4444 !important; }
+        .edit-post svg, .delete-post svg { width: 15px; height: 15px; }
+
+        /* ── Slideup toast animation ── */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        /* ── Modal inputs ── */
+        #boardModal .modal-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+        #boardModal .modal-field label { font-size: .85rem; font-weight: 600; color: #64748b; }
+        #boardModal .modern-input {
+            background: #f1f5f9; border: 2px solid transparent; border-radius: 12px;
+            padding: 12px 14px; font-size: .95rem; font-family: inherit;
+            color: #1e293b; width: 100%; resize: vertical;
+        }
+        #boardModal .modern-input:focus { background: white; border-color: #818cf8; outline: none; }
+        #boardModal .checkbox-label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: .9rem; color: #64748b; }
+        #boardModal .checkbox-label input { display: none; }
+        #boardModal .custom-checkbox {
+            width: 20px; height: 20px; border: 2px solid #e2e8f0; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center; background: white; flex-shrink: 0;
+        }
+        #boardModal .custom-checkbox svg { width: 12px; height: 12px; stroke: white; opacity: 0; }
+    </style>
 </head>
 <body>
     <div class="app-container">
@@ -21,8 +107,8 @@
                 </div>
             </div>
 
-            <nav class="sidebar-nav" style="display: flex; flex-direction: column; height: 100%;">
-                <div style="display: flex; flex-direction: column; gap: 8px;">
+            <nav class="sidebar-nav" style="display:flex;flex-direction:column;height:100%">
+                <div style="display:flex;flex-direction:column;gap:8px">
                     <button class="nav-item active" data-nav="Accueil">
                         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
@@ -31,12 +117,14 @@
                         <span class="nav-label">Accueil</span>
                     </button>
 
-                    <button class="nav-item" data-nav="Forum">
+                    <button class="nav-item" data-nav="Réseau" data-href="/network">
                         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z"></path>
-                            <path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"></path>
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                         </svg>
-                        <span class="nav-label">Forum</span>
+                        <span class="nav-label">Réseau</span>
                     </button>
 
                     <button class="nav-item" data-nav="Carte">
@@ -48,7 +136,7 @@
                     </button>
                 </div>
 
-                <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
+                <div style="margin-top:auto;display:flex;flex-direction:column;gap:8px">
                     <button class="nav-item" data-nav="Profil" data-href="/profile">
                         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -79,7 +167,8 @@
                     </div>
                     
                     <div class="header-actions">
-                        <button class="btn-icon btn-primary">
+                        <!-- Nouveau post -->
+                        <button class="btn-icon btn-primary" id="newPostBtn" title="Nouveau post">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="12" y1="5" x2="12" y2="19"></line>
                                 <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -96,36 +185,56 @@
                     </div>
                 </header>
 
+                <!-- Humeur -->
                 <section class="mood-section">
                     <div class="section-header">
                         <div class="section-indicator"></div>
                         <h2>Ton humeur du jour</h2>
                     </div>
-                    
-                    <div class="mood-grid" id="moodGrid">
-                    </div>
+                    <div class="mood-grid" id="moodGrid"></div>
                 </section>
 
-                <section class="stats-section" id="statsSection">
-                </section>
+                <!-- Stats -->
+                <section class="stats-section" id="statsSection"></section>
 
+                <!-- Discussions / Posts -->
                 <section class="discussions-section">
                     <div class="section-header-with-link">
                         <div>
                             <div class="section-indicator"></div>
                             <h2>Discussions récentes</h2>
                         </div>
-                        <a href="#" class="see-all-link">Voir tout →</a>
+                        <a href="#" class="see-all-link" id="seeAllLink">Voir tout →</a>
                     </div>
 
-                    <div class="discussions-list" id="discussionsList">
+                    <!-- Search + filters -->
+                    <div class="search-bar">
+                        <div class="search-input-wrap">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            <input id="boardSearch" type="text" placeholder="Rechercher un post…">
+                        </div>
+                        <select id="boardSort" class="board-select">
+                            <option value="date">📅 Date</option>
+                            <option value="likes">❤️ Likes</option>
+                            <option value="comments">💬 Commentaires</option>
+                        </select>
+                        <select id="boardOrder" class="board-select">
+                            <option value="desc">↓ Récent</option>
+                            <option value="asc">↑ Ancien</option>
+                        </select>
                     </div>
+
+                    <div class="discussions-list" id="discussionsList"></div>
                 </section>
 
+                <!-- Quote banner -->
                 <div class="bottom-banner" id="quoteBanner">
                     <span class="banner-emoji">💙</span>
                     <div id="quoteLoader" class="quote-loader"></div>
-                    <p class="quote-text" id="quoteText" style="display: none;"></p>
+                    <p class="quote-text" id="quoteText" style="display:none"></p>
                 </div>
             </div>
         </main>

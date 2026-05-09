@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+
+	"forum-zukuk/database"
 )
 
 type Mood struct {
@@ -37,6 +39,12 @@ type BoardResponse struct {
 	Quotes      []string     `json:"quotes"`
 }
 
+// validMoods contient les humeurs autorisées (identique au CHECK de la table)
+var validMoods = map[string]bool{
+	"Bien": true, "Calme": true, "Triste": true, "Anxieux": true, "Colère": true,
+}
+
+// GetBoardData — rétrocompatibilité (board.js v1)
 func GetBoardData(c *gin.Context) {
 	moods := []Mood{
 		{Name: "Bien", Emoji: "😊"},
@@ -71,6 +79,7 @@ func GetBoardData(c *gin.Context) {
 	c.JSON(http.StatusOK, BoardResponse{Moods: moods, Discussions: discussions, Stats: stats, Quotes: quotes})
 }
 
+// GetRandomQuote — citation aléatoire
 func GetRandomQuote(c *gin.Context) {
 	quotes := []string{
 		"Tu n'es pas seul. Chaque jour est une nouvelle opportunité.",
@@ -85,25 +94,143 @@ func GetRandomQuote(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"quote": quotes[randomIdx]})
 }
 
+// UpdateMood — enregistre l'humeur du jour en base (1 entrée par jour par utilisateur)
+func UpdateMood(c *gin.Context) {
+	userID := c.GetInt("userID")
+
+	var mood Mood
+	if err := json.NewDecoder(c.Request.Body).Decode(&mood); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Données invalides."})
+		return
+	}
+
+	if !validMoods[mood.Name] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Humeur non reconnue."})
+		return
+	}
+
+	// Mettre à jour l'entrée du jour si elle existe, sinon insérer
+	// L'index UNIQUE est sur (user_id, date(recorded_at))
+	res, err := database.ZUKUKDB.Exec(`
+		UPDATE mood_history
+		SET mood = ?, recorded_at = CURRENT_TIMESTAMP
+		WHERE user_id = ? AND date(recorded_at) = date('now')`,
+		mood.Name, userID,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur mise à jour humeur."})
+		return
+	}
+
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		// Aucune entrée aujourd'hui → créer
+		if _, err := database.ZUKUKDB.Exec(`
+			INSERT INTO mood_history (user_id, mood) VALUES (?, ?)`,
+			userID, mood.Name,
+		); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur enregistrement humeur."})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "mood": mood})
+}
+
+// GetMoodHistory — retourne les 30 derniers jours d'humeur de l'utilisateur connecté
+func GetMoodHistory(c *gin.Context) {
+	userID := c.GetInt("userID")
+
+	rows, err := database.ZUKUKDB.Query(`
+		SELECT mood, date(recorded_at) AS day, recorded_at
+		FROM mood_history
+		WHERE user_id = ?
+		ORDER BY recorded_at DESC
+		LIMIT 30`,
+		userID,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur serveur."})
+		return
+	}
+	defer rows.Close()
+
+	type MoodEntry struct {
+		Mood       string    `json:"mood"`
+		Day        string    `json:"day"`
+		RecordedAt time.Time `json:"recorded_at"`
+	}
+
+	entries := []MoodEntry{}
+	for rows.Next() {
+		var e MoodEntry
+		if err := rows.Scan(&e.Mood, &e.Day, &e.RecordedAt); err == nil {
+			entries = append(entries, e)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"history": entries})
+}
+
+// GetMoodStats — résumé statistique de l'humeur (30 jours)
+func GetMoodStats(c *gin.Context) {
+	userID := c.GetInt("userID")
+
+	rows, err := database.ZUKUKDB.Query(`
+		SELECT mood, COUNT(*) AS total
+		FROM mood_history
+		WHERE user_id = ?
+		  AND recorded_at >= datetime('now', '-30 days')
+		GROUP BY mood
+		ORDER BY total DESC`,
+		userID,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur serveur."})
+		return
+	}
+	defer rows.Close()
+
+	type MoodStat struct {
+		Mood  string `json:"mood"`
+		Total int    `json:"total"`
+	}
+
+	stats := []MoodStat{}
+	for rows.Next() {
+		var s MoodStat
+		if err := rows.Scan(&s.Mood, &s.Total); err == nil {
+			stats = append(stats, s)
+		}
+	}
+
+	// Total de jours actifs sur 30 jours
+	var activeDays int
+	database.ZUKUKDB.QueryRow(`
+		SELECT COUNT(DISTINCT date(recorded_at))
+		FROM mood_history
+		WHERE user_id = ? AND recorded_at >= datetime('now', '-30 days')`,
+		userID,
+	).Scan(&activeDays)
+
+	c.JSON(http.StatusOK, gin.H{
+		"stats":       stats,
+		"active_days": activeDays,
+	})
+}
+
+// ─── Rétrocompatibilité board.js v1 ─────────────────────────────────────────
+
 func CreateDiscussion(c *gin.Context) {
 	var discussion Discussion
 	if err := json.NewDecoder(c.Request.Body).Decode(&discussion); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Données invalides."})
 		return
 	}
-	discussion.Time = "À l'instant"
-	discussion.Likes = 0
+	discussion.Time     = "À l'instant"
+	discussion.Likes    = 0
 	discussion.Comments = 0
 	c.JSON(http.StatusOK, discussion)
-}
-
-func UpdateMood(c *gin.Context) {
-	var mood Mood
-	if err := json.NewDecoder(c.Request.Body).Decode(&mood); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Données invalides."})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"status": "success", "mood": mood})
 }
 
 func LikeDiscussion(c *gin.Context) {
