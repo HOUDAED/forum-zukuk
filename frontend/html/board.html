@@ -144,7 +144,6 @@
                             <div class="section-indicator"></div>
                             <h2>Discussions récentes</h2>
                         </div>
-                        <a href="#" class="see-all-link" id="seeAllLink">Voir tout →</a>
                     </div>
 
                     <!-- Search + filters -->
@@ -181,6 +180,92 @@
     </div>
 
     <script src="/frontend/js/board.js"></script>
+
+    <style>
+    /* Design des cartes de statistiques */
+    .stats-section {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+    }
+    .stat-card {
+        flex: 1;
+        min-width: 200px;
+        background: white;
+        border-radius: 16px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        flex-shrink: 0;
+    }
+    .stat-info {
+        display: flex;
+        flex-direction: column;
+    }
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1e293b;
+        line-height: 1.2;
+    }
+    .stat-label {
+        font-size: 0.85rem;
+        color: #64748b;
+        font-weight: 500;
+        margin-top: 4px;
+    }
+    /* Les couleurs de tes anciennes pastilles */
+    .bg-blue-100 { background-color: #dbeafe; }
+    .bg-red-50 { background-color: #fef2f2; }
+    .bg-purple-100 { background-color: #f3e8ff; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // On met un micro-délai de 500ms pour écraser les anciennes cartes vides générées par board.js
+    setTimeout(async () => {
+        try {
+            const res = await fetch('http://localhost:8081/api/me/dashboard-stats', { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('statsSection').innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-icon bg-blue-100"></div>
+                        <div class="stat-info">
+                            <span class="stat-value">${data.posts}</span>
+                            <span class="stat-label">Posts partagés</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-red-50"></div>
+                        <div class="stat-info">
+                            <span class="stat-value">${data.responses}</span>
+                            <span class="stat-label">Réponses reçues</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-purple-100"></div>
+                        <div class="stat-info">
+                            <span class="stat-value">${data.active_days}</span>
+                            <span class="stat-label">Jours actifs</span>
+                        </div>
+                    </div>
+                `;
+            }
+        } catch (e) {
+            console.error("Erreur lors de la récupération des statistiques :", e);
+        }
+    }, 500); 
+});
+</script>
 
 </body>
 </html>

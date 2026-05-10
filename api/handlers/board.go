@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -44,39 +45,56 @@ var validMoods = map[string]bool{
 	"Bien": true, "Calme": true, "Triste": true, "Anxieux": true, "Colère": true,
 }
 
-// GetBoardData — rétrocompatibilité (board.js v1)
 func GetBoardData(c *gin.Context) {
+	userID := c.GetInt("userID") // Récupère l'ID de l'utilisateur connecté
+
+	// --- 1. CALCUL DES VRAIES STATS ---
+	var postsCount, responsesCount, activeDays int
+
+	// Posts partagés
+	database.ZUKUKDB.QueryRow(`SELECT COUNT(*) FROM posts WHERE user_id = ? AND deleted_at IS NULL`, userID).Scan(&postsCount)
+
+	// Réponses reçues (commentaires des autres sur tes posts)
+	database.ZUKUKDB.QueryRow(`
+        SELECT COUNT(*) FROM comments c
+        JOIN posts p ON p.id = c.post_id
+        WHERE p.user_id = ? AND c.user_id != ? AND c.deleted_at IS NULL`,
+		userID, userID).Scan(&responsesCount)
+
+	// Jours actifs
+	database.ZUKUKDB.QueryRow(`SELECT COUNT(DISTINCT date(recorded_at)) FROM mood_history WHERE user_id = ?`, userID).Scan(&activeDays)
+
+	// --- 2. CONSTRUCTION DE LA RÉPONSE ---
 	moods := []Mood{
-		{Name: "Bien", Emoji: "😊"},
-		{Name: "Calme", Emoji: "😌"},
-		{Name: "Triste", Emoji: "😢"},
-		{Name: "Anxieux", Emoji: "😰"},
+		{Name: "Bien", Emoji: "😊"}, {Name: "Calme", Emoji: "😌"},
+		{Name: "Triste", Emoji: "😢"}, {Name: "Anxieux", Emoji: "😰"},
 		{Name: "Colère", Emoji: "😡"},
 	}
 
-	discussions := []Discussion{
-		{ID: 1, Author: "Marie_123", Time: "2h", Title: "J'ai du mal à gérer mon stress au travail", Tag: "Stress", TagColor: "bg-[#ff5722]", Likes: 12, Comments: 8},
-		{ID: 2, Author: "Thomas_zen", Time: "5h", Title: "Techniques de respiration qui m'ont aidé", Tag: "Bien-être", TagColor: "bg-[#00c853]", Likes: 24, Comments: 15},
-		{ID: 3, Author: "Sophie_22", Time: "1 jour", Title: "Se sentir seul à l'université", Tag: "Solitude", TagColor: "bg-[#9c27b0]", Likes: 18, Comments: 22},
-	}
-
+	// On injecte les vrais chiffres dans les titres des stats
 	stats := []Stat{
-		{Title: "Posts partagés", Color: "bg-blue-100"},
-		{Title: "Réponses reçues", Color: "bg-red-50"},
-		{Title: "Jours actifs", Color: "bg-purple-100"},
+		{Title: fmt.Sprintf("%d Posts partagés", postsCount), Color: "bg-blue-100"},
+		{Title: fmt.Sprintf("%d Réponses reçues", responsesCount), Color: "bg-red-50"},
+		{Title: fmt.Sprintf("%d Jours actifs", activeDays), Color: "bg-purple-100"},
 	}
 
 	quotes := []string{
 		"Tu n'es pas seul. Chaque jour est une nouvelle opportunité.",
-		"Prendre soin de soi n'est pas un luxe, c'est une nécessité.",
-		"Chaque petit pas vers la guérison est une victoire.",
-		"Il est tout à fait normal de ne pas se sentir bien tous les jours.",
 		"Ta santé mentale est une priorité absolue.",
 		"Respire. Tu fais de ton mieux et c'est largement suffisant.",
-		"N'oublie pas d'être aussi indulgent avec toi-même qu'avec les autres.",
 	}
 
-	c.JSON(http.StatusOK, BoardResponse{Moods: moods, Discussions: discussions, Stats: stats, Quotes: quotes})
+	// Les discussions (on peut laisser les exemples pour l'instant ou mettre les vraies)
+	discussions := []Discussion{
+		{ID: 1, Author: "Marie_123", Time: "2h", Title: "J'ai du mal à gérer mon stress au travail", Tag: "Stress", TagColor: "bg-[#ff5722]", Likes: 12, Comments: 8},
+	}
+
+	c.JSON(http.StatusOK, BoardResponse{
+		Moods:       moods,
+		Discussions: discussions,
+		Stats:       stats,
+		Quotes:      quotes,
+	})
 }
 
 // GetRandomQuote — citation aléatoire
@@ -227,8 +245,8 @@ func CreateDiscussion(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Données invalides."})
 		return
 	}
-	discussion.Time     = "À l'instant"
-	discussion.Likes    = 0
+	discussion.Time = "À l'instant"
+	discussion.Likes = 0
 	discussion.Comments = 0
 	c.JSON(http.StatusOK, discussion)
 }
@@ -262,4 +280,41 @@ func GetDiscussionByID(c *gin.Context) {
 		}
 	}
 	c.JSON(http.StatusNotFound, gin.H{"error": "Discussion introuvable."})
+}
+
+// ─── GetUserDashboardStats ───────────────────────────────────────────────────
+func GetUserDashboardStats(c *gin.Context) {
+	userID := c.GetInt("userID")
+
+	var postsCount, responsesCount, activeDays int
+
+	// 1. Posts partagés (créés par l'utilisateur)
+	database.ZUKUKDB.QueryRow(`
+        SELECT COUNT(*) FROM posts 
+        WHERE user_id = ? AND deleted_at IS NULL`,
+		userID,
+	).Scan(&postsCount)
+
+	// 2. Réponses reçues (commentaires faits par d'autres sur tes posts)
+	database.ZUKUKDB.QueryRow(`
+        SELECT COUNT(*) FROM comments c
+        JOIN posts p ON p.id = c.post_id
+        WHERE p.user_id = ? AND c.user_id != ? 
+          AND c.deleted_at IS NULL AND p.deleted_at IS NULL`,
+		userID, userID,
+	).Scan(&responsesCount)
+
+	// 3. Jours actifs (jours uniques où tu as enregistré une humeur)
+	database.ZUKUKDB.QueryRow(`
+        SELECT COUNT(DISTINCT date(recorded_at)) 
+        FROM mood_history 
+        WHERE user_id = ?`,
+		userID,
+	).Scan(&activeDays)
+
+	c.JSON(http.StatusOK, gin.H{
+		"posts":       postsCount,
+		"responses":   responsesCount,
+		"active_days": activeDays,
+	})
 }
