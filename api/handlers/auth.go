@@ -11,8 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 
-	"forum-zukuk/database"
 	"forum-zukuk/api/utils"
+	"forum-zukuk/database"
 )
 
 type RegisterRequest struct {
@@ -109,27 +109,23 @@ func Login(c *gin.Context) {
 
 	var userID int
 	var hash string
+	var pausedUntil *string
 
-	// On prépare les infos de connexion
 	ip := c.ClientIP()
 	userAgent := c.Request.UserAgent()
 
-	// 1. On cherche si l'utilisateur existe
 	err := database.ZUKUKDB.QueryRow(`
-		SELECT id, password_hash FROM users
+		SELECT id, password_hash, paused_until FROM users
 		WHERE (email = ? OR pseudo = ?) AND deleted_at IS NULL`,
 		strings.ToLower(identifier), identifier,
-	).Scan(&userID, &hash)
-	
+	).Scan(&userID, &hash, &pausedUntil)
+
 	if err != nil {
-		// L'utilisateur n'existe pas, on ne peut pas lier cet échec à un profil précis
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Identifiants incorrects."})
 		return
 	}
 
-	// 2. On vérifie le mot de passe (L'utilisateur existe)
 	if bcrypt.CompareHashAndPassword([]byte(hash), []byte(req.Password)) != nil {
-		// Le mot de passe est faux : on enregistre un ÉCHEC pour cet utilisateur
 		database.ZUKUKDB.Exec(
 			`INSERT INTO connection_history (user_id, ip_address, user_agent, status) VALUES (?, ?, ?, ?)`,
 			userID, ip, userAgent, "Échouée",
@@ -138,7 +134,12 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// 3. Tout est bon : on crée la session
+	if pausedUntil != nil {
+		database.ZUKUKDB.Exec(`
+			UPDATE users SET paused_until = NULL, updated_at = CURRENT_TIMESTAMP
+			WHERE id = ?`, userID)
+	}
+
 	token, err := createSession(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur création session."})
@@ -146,7 +147,6 @@ func Login(c *gin.Context) {
 	}
 	setSessionCookie(c, token)
 
-	// On enregistre un SUCCÈS
 	database.ZUKUKDB.Exec(
 		`INSERT INTO connection_history (user_id, ip_address, user_agent, status) VALUES (?, ?, ?, ?)`,
 		userID, ip, userAgent, "Réussie",
@@ -249,13 +249,11 @@ func UpdateProfile(c *gin.Context) {
 			return
 		}
 
-		// Vérification du mot de passe actuel pour autoriser la modification
 		if bcrypt.CompareHashAndPassword([]byte(currentHash), []byte(req.CurrentPassword)) != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Mot de passe actuel incorrect."})
 			return
 		}
 
-		// SÉCURITÉ : Vérifie que le nouveau mot de passe est différent de l'actuel
 		if bcrypt.CompareHashAndPassword([]byte(currentHash), []byte(req.Password)) == nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Le nouveau mot de passe doit être différent du mot de passe actuel."})
 			return

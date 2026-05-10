@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -44,6 +45,7 @@ func createTables() {
 			email_verified INTEGER  NOT NULL DEFAULT 0,
 			verify_token   TEXT     NOT NULL DEFAULT '',
 			verify_expires DATETIME,
+			paused_until   DATETIME DEFAULT NULL,
 			created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			deleted_at     DATETIME DEFAULT NULL
@@ -119,16 +121,15 @@ func createTables() {
 			name TEXT    NOT NULL UNIQUE
 		)`,
 		`CREATE TABLE IF NOT EXISTS connection_history (
-		id         INTEGER  PRIMARY KEY AUTOINCREMENT,
-		user_id    INTEGER  NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-		ip_address TEXT     NOT NULL DEFAULT '',
-		user_agent TEXT     NOT NULL DEFAULT '',
-		status     TEXT     NOT NULL DEFAULT 'Réussie',
+			id         INTEGER  PRIMARY KEY AUTOINCREMENT,
+			user_id    INTEGER  NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			ip_address TEXT     NOT NULL DEFAULT '',
+			user_agent TEXT     NOT NULL DEFAULT '',
+			status     TEXT     NOT NULL DEFAULT 'Réussie',
 			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)`,
-		`CREATE INDEX IF NOT EXISTS idx_connection_history_user ON connection_history(user_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_connection_history_user    ON connection_history(user_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_connection_history_created ON connection_history(created_at DESC)`,
-
 		`CREATE TABLE IF NOT EXISTS activities (
 			id          INTEGER  PRIMARY KEY AUTOINCREMENT,
 			created_by  INTEGER  REFERENCES users(id) ON DELETE SET NULL,
@@ -216,6 +217,131 @@ func seedCategories() {
 	log.Println("Catégories initialisées")
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// SUPPRESSION — trois niveaux cohérents
+//
+//  1. SoftDeleteUser   → deleted_at + snapshot dans deletion_log (30 j)
+//  2. SoftDeletePost   → idem pour les posts
+//  3. SoftDeleteComment→ idem pour les commentaires
+//
+// Le cleaner (startCleaner) exécute la purge définitive après purge_after.
+// DeleteUserAndData appelle SoftDeleteUser (plus de hard DELETE immédiat).
+// ═════════════════════════════════════════════════════════════════════════════
+
+// SoftDeleteUser masque le compte, invalide les sessions et enregistre
+// un snapshot dans deletion_log. La purge définitive interviendra après 30 jours.
+func SoftDeleteUser(userID int, deletedBy int, reason string) error {
+	tx, err := ZUKUKDB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Vérifier que l'utilisateur existe et n'est pas déjà supprimé
+	var pseudo, email string
+	if err := tx.QueryRow(
+		`SELECT pseudo, email FROM users WHERE id = ? AND deleted_at IS NULL`, userID,
+	).Scan(&pseudo, &email); err != nil {
+		return fmt.Errorf("utilisateur introuvable ou déjà supprimé")
+	}
+
+	// 1. Soft delete : marquer deleted_at
+	if _, err := tx.Exec(
+		`UPDATE users SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, userID,
+	); err != nil {
+		return fmt.Errorf("erreur soft delete user : %w", err)
+	}
+
+	// 2. Invalider toutes les sessions immédiatement
+	if _, err := tx.Exec(`DELETE FROM sessions WHERE user_id = ?`, userID); err != nil {
+		return fmt.Errorf("erreur suppression sessions : %w", err)
+	}
+
+	// 3. Invalider les tokens de réinitialisation de mot de passe
+	tx.Exec(`DELETE FROM password_resets WHERE user_id = ?`, userID)
+
+	// 4. Enregistrer un snapshot dans deletion_log (purge après 30 jours)
+	snapshot := fmt.Sprintf(`{"pseudo":%q,"email":%q,"user_id":%d}`, pseudo, email, userID)
+	if _, err := tx.Exec(`
+		INSERT INTO deletion_log (table_name, record_id, deleted_by, reason, snapshot, purge_after)
+		VALUES ('users', ?, ?, ?, ?, datetime('now', '+30 days'))`,
+		userID, deletedBy, reason, snapshot,
+	); err != nil {
+		return fmt.Errorf("erreur deletion_log : %w", err)
+	}
+
+	return tx.Commit()
+}
+
+// DeleteUserAndData est appelé depuis le handler HTTP.
+// Il utilise SoftDeleteUser : le compte est masqué immédiatement,
+// la purge définitive intervient après 30 jours via le cleaner.
+func DeleteUserAndData(userID int) error {
+	return SoftDeleteUser(userID, userID, "user_request")
+}
+
+// SoftDeletePost soft-delete un post et tous ses commentaires,
+// avec un snapshot dans deletion_log.
+func SoftDeletePost(postID, deletedBy int, reason string) error {
+	var title, content string
+	var userID int
+	err := ZUKUKDB.QueryRow(
+		`SELECT title, content, user_id FROM posts WHERE id = ? AND deleted_at IS NULL`, postID,
+	).Scan(&title, &content, &userID)
+	if err != nil {
+		return fmt.Errorf("post introuvable : %w", err)
+	}
+
+	snapshot := fmt.Sprintf(`{"title":%q,"content":%q,"user_id":%d}`, title, content, userID)
+
+	tx, err := ZUKUKDB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	tx.Exec(`UPDATE posts    SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?`, postID)
+	tx.Exec(`UPDATE comments SET deleted_at = CURRENT_TIMESTAMP WHERE post_id = ?`, postID)
+	tx.Exec(`
+		INSERT INTO deletion_log (table_name, record_id, deleted_by, reason, snapshot, purge_after)
+		VALUES ('posts', ?, ?, ?, ?, datetime('now', '+30 days'))`,
+		postID, deletedBy, reason, snapshot)
+
+	return tx.Commit()
+}
+
+// SoftDeleteComment soft-delete un commentaire avec snapshot.
+func SoftDeleteComment(commentID, deletedBy int, reason string) error {
+	var content string
+	var postID, userID int
+	err := ZUKUKDB.QueryRow(
+		`SELECT content, post_id, user_id FROM comments WHERE id = ? AND deleted_at IS NULL`, commentID,
+	).Scan(&content, &postID, &userID)
+	if err != nil {
+		return fmt.Errorf("commentaire introuvable : %w", err)
+	}
+
+	snapshot := fmt.Sprintf(`{"content":%q,"post_id":%d,"user_id":%d}`, content, postID, userID)
+
+	tx, err := ZUKUKDB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	tx.Exec(`UPDATE comments SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?`, commentID)
+	tx.Exec(`
+		INSERT INTO deletion_log (table_name, record_id, deleted_by, reason, snapshot, purge_after)
+		VALUES ('comments', ?, ?, ?, ?, datetime('now', '+30 days'))`,
+		commentID, deletedBy, reason, snapshot)
+
+	return tx.Commit()
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// MOT DE PASSE
+// ═════════════════════════════════════════════════════════════════════════════
+
 func CreateResetToken(email string, token string) error {
 	var userID int
 	err := ZUKUKDB.QueryRow(`SELECT id FROM users WHERE email = ? AND deleted_at IS NULL`, email).Scan(&userID)
@@ -239,30 +365,35 @@ func ValidateResetToken(token string) (int, error) {
 		token,
 	).Scan(&userID)
 	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
-			return 0, fmt.Errorf("token invalide ou expiré")
-		}
-		return 0, err
+		return 0, fmt.Errorf("token invalide ou expiré")
 	}
 	return userID, nil
 }
 
+// IsPasswordInHistory vérifie si le mot de passe en clair correspond à l'un
+// des 5 derniers hashes stockés (bcrypt). Corrige le bug original qui ne
+// comparait jamais réellement les hashes.
 func IsPasswordInHistory(userID int, plainPassword string) (bool, error) {
 	rows, err := ZUKUKDB.Query(
-		`SELECT password_hash FROM password_history WHERE user_id = ? ORDER BY created_at DESC LIMIT 5`,
+		`SELECT password_hash FROM password_history
+		 WHERE user_id = ?
+		 ORDER BY created_at DESC LIMIT 5`,
 		userID,
 	)
 	if err != nil {
 		return false, err
 	}
 	defer rows.Close()
+
 	for rows.Next() {
 		var hash string
 		if err := rows.Scan(&hash); err != nil {
 			continue
 		}
-		// Comparaison bcrypt faite dans le handler via import golang.org/x/crypto/bcrypt
-		_ = hash
+		// Comparaison bcrypt réelle (corrige le bug : avant, _ = hash ne comparait rien)
+		if bcrypt.CompareHashAndPassword([]byte(hash), []byte(plainPassword)) == nil {
+			return true, nil // mot de passe déjà utilisé
+		}
 	}
 	return false, nil
 }
@@ -273,6 +404,7 @@ func UpdatePassword(userID int, newPasswordHash string) error {
 		return err
 	}
 	defer tx.Rollback()
+
 	if _, err := tx.Exec(
 		`UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
 		newPasswordHash, userID,
@@ -287,72 +419,13 @@ func UpdatePassword(userID int, newPasswordHash string) error {
 	}
 	tx.Exec(`DELETE FROM password_resets WHERE user_id = ?`, userID)
 	tx.Exec(`DELETE FROM sessions WHERE user_id = ?`, userID)
+
 	return tx.Commit()
 }
 
-func SoftDeletePost(postID, deletedBy int, reason string) error {
-	var title, content string
-	var userID int
-	err := ZUKUKDB.QueryRow(
-		`SELECT title, content, user_id FROM posts WHERE id = ? AND deleted_at IS NULL`, postID,
-	).Scan(&title, &content, &userID)
-	if err != nil {
-		return fmt.Errorf("post introuvable : %w", err)
-	}
-	snapshot := fmt.Sprintf(`{"title":%q,"content":%q,"user_id":%d}`, title, content, userID)
-	if _, err = ZUKUKDB.Exec(
-		`UPDATE posts SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?`, postID,
-	); err != nil {
-		return err
-	}
-	_, err = ZUKUKDB.Exec(`
-		INSERT INTO deletion_log (table_name, record_id, deleted_by, reason, snapshot, purge_after)
-		VALUES ('posts', ?, ?, ?, ?, datetime('now', '+30 days'))`,
-		postID, deletedBy, reason, snapshot,
-	)
-	return err
-}
-
-func SoftDeleteComment(commentID, deletedBy int, reason string) error {
-	var content string
-	var postID, userID int
-	err := ZUKUKDB.QueryRow(
-		`SELECT content, post_id, user_id FROM comments WHERE id = ? AND deleted_at IS NULL`, commentID,
-	).Scan(&content, &postID, &userID)
-	if err != nil {
-		return fmt.Errorf("commentaire introuvable : %w", err)
-	}
-	snapshot := fmt.Sprintf(`{"content":%q,"post_id":%d,"user_id":%d}`, content, postID, userID)
-	ZUKUKDB.Exec(`UPDATE comments SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?`, commentID)
-	_, err = ZUKUKDB.Exec(`
-		INSERT INTO deletion_log (table_name, record_id, deleted_by, reason, snapshot, purge_after)
-		VALUES ('comments', ?, ?, ?, ?, datetime('now', '+30 days'))`,
-		commentID, deletedBy, reason, snapshot,
-	)
-	return err
-}
-
-func DeleteUserAndData(userID int) error {
-	tx, err := ZUKUKDB.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-	var exists int
-	if err := tx.QueryRow(`SELECT COUNT(*) FROM users WHERE id = ? AND deleted_at IS NULL`, userID).Scan(&exists); err != nil {
-		return err
-	}
-	if exists == 0 {
-		return fmt.Errorf("utilisateur introuvable")
-	}
-	if _, err := tx.Exec(`DELETE FROM sessions WHERE user_id = ?`, userID); err != nil {
-		return err
-	}
-	if _, err := tx.Exec(`DELETE FROM users WHERE id = ?`, userID); err != nil {
-		return err
-	}
-	return tx.Commit()
-}
+// ═════════════════════════════════════════════════════════════════════════════
+// LIKES
+// ═════════════════════════════════════════════════════════════════════════════
 
 func TogglePostLike(postID, userID int) (liked bool, count int, err error) {
 	var exists int
@@ -367,6 +440,7 @@ func TogglePostLike(postID, userID int) (liked bool, count int, err error) {
 	if exists == 0 {
 		return false, 0, fmt.Errorf("publication introuvable")
 	}
+
 	res, execErr := ZUKUKDB.Exec(
 		`INSERT OR IGNORE INTO post_likes (post_id, user_id) VALUES (?, ?)`, postID, userID,
 	)
@@ -380,22 +454,20 @@ func TogglePostLike(postID, userID int) (liked bool, count int, err error) {
 	} else {
 		liked = true
 	}
+
 	ZUKUKDB.QueryRow(`
 		SELECT COUNT(*) FROM post_likes pl
 		JOIN posts p ON p.id = pl.post_id
 		WHERE pl.post_id = ? AND p.deleted_at IS NULL`,
 		postID,
 	).Scan(&count)
+
 	return liked, count, nil
 }
 
-func logModerationAction(adminID int, action, targetType string, targetID int, reason string) {
-	ZUKUKDB.Exec(`
-		INSERT INTO moderation_log (admin_id, action, target_type, target_id, reason)
-		VALUES (?, ?, ?, ?, ?)`,
-		adminID, action, targetType, targetID, reason,
-	)
-}
+// ═════════════════════════════════════════════════════════════════════════════
+// CLEANER — tâche de fond toutes les heures
+// ═════════════════════════════════════════════════════════════════════════════
 
 func startCleaner() {
 	go func() {
@@ -419,15 +491,32 @@ func cleanExpiredSessions() {
 	}
 }
 
+// purgeExpiredDeletions supprime définitivement les enregistrements dont
+// purge_after est dépassé (soft-deleted depuis plus de 30 jours).
+//
+// Pour les users : ON DELETE CASCADE supprime automatiquement sessions,
+// posts, comments, likes, mood_history, connection_history, etc.
 func purgeExpiredDeletions() {
 	rows, err := ZUKUKDB.Query(`
 		SELECT table_name, record_id FROM deletion_log
 		WHERE purge_after < CURRENT_TIMESTAMP`)
 	if err != nil {
+		log.Println("Erreur lecture deletion_log :", err)
 		return
 	}
 	defer rows.Close()
-	allowed := map[string]bool{"posts": true, "comments": true, "users": true}
+
+	// Tables autorisées (whitelist pour éviter les injections SQL)
+	allowed := map[string]bool{
+		"users":    true,
+		"posts":    true,
+		"comments": true,
+	}
+
+	var toDelete []struct {
+		table string
+		id    int
+	}
 	for rows.Next() {
 		var tableName string
 		var recordID int
@@ -435,9 +524,74 @@ func purgeExpiredDeletions() {
 			continue
 		}
 		if !allowed[tableName] {
+			log.Printf("Purge refusée pour table non autorisée : %s", tableName)
 			continue
 		}
-		ZUKUKDB.Exec(fmt.Sprintf(`DELETE FROM %s WHERE id = ?`, tableName), recordID)
-		ZUKUKDB.Exec(`DELETE FROM deletion_log WHERE table_name = ? AND record_id = ?`, tableName, recordID)
+		toDelete = append(toDelete, struct {
+			table string
+			id    int
+		}{tableName, recordID})
 	}
+	rows.Close() // fermer avant d'exécuter des modifications
+
+	for _, item := range toDelete {
+		_, err := ZUKUKDB.Exec(
+			fmt.Sprintf(`DELETE FROM %s WHERE id = ?`, item.table), item.id,
+		)
+		if err != nil {
+			log.Printf("Erreur purge %s#%d : %v", item.table, item.id, err)
+			continue
+		}
+		ZUKUKDB.Exec(`
+			DELETE FROM deletion_log WHERE table_name = ? AND record_id = ?`,
+			item.table, item.id,
+		)
+		log.Printf("Purgé définitivement : %s#%d", item.table, item.id)
+	}
+}
+
+// logModerationAction enregistre une action admin dans moderation_log.
+func logModerationAction(adminID int, action, targetType string, targetID int, reason string) {
+	ZUKUKDB.Exec(`
+		INSERT INTO moderation_log (admin_id, action, target_type, target_id, reason)
+		VALUES (?, ?, ?, ?, ?)`,
+		adminID, action, targetType, targetID, reason,
+	)
+}
+
+// PauseUserAccount met le compte en pause.
+// Tu peux définir une durée, ou simplement mettre CURRENT_TIMESTAMP pour indiquer que c'est en pause jusqu'à réactivation.
+func PauseUserAccount(userID int) error {
+	tx, err := ZUKUKDB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// 1. Mettre à jour la colonne paused_until (ici on met la date actuelle comme marqueur de pause)
+	if _, err := tx.Exec(
+		`UPDATE users SET paused_until = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, 
+		userID,
+	); err != nil {
+		return fmt.Errorf("erreur lors de la mise en pause : %w", err)
+	}
+
+	// 2. Supprimer toutes les sessions actives pour forcer la déconnexion
+	if _, err := tx.Exec(`DELETE FROM sessions WHERE user_id = ?`, userID); err != nil {
+		return fmt.Errorf("erreur suppression sessions : %w", err)
+	}
+
+	return tx.Commit()
+}
+
+// ResumeUserAccount annule la pause du compte
+func ResumeUserAccount(userID int) error {
+	_, err := ZUKUKDB.Exec(
+		`UPDATE users SET paused_until = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, 
+		userID,
+	)
+	if err != nil {
+		return fmt.Errorf("erreur lors de la réactivation du compte : %w", err)
+	}
+	return nil
 }

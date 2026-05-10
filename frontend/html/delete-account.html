@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zukuk — Ton espace, tes choix</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="/frontend/css/delete.css">
+
+  <style>
+   
+  </style>
+</head>
+<body>
+
+  <!-- ── Topbar ─────────────────────────────────────────────────────────── -->
+  <div class="topbar">
+    <a class="logo" href="/board">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      </div>
+      Zukuk
+    </a>
+    <a class="back-btn" href="/profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      Retour au profil
+    </a>
+  </div>
+
+  <!-- ── Hero ──────────────────────────────────────────────────────────── -->
+  <div class="hero">
+    <span class="hero-emoji">💙</span>
+    <h1>On espère te revoir bientôt</h1>
+    <p>Avant de partir, sache que tu as toujours le choix. Il n'est pas nécessaire de tout effacer pour prendre du recul. Prends le temps d'y réfléchir.</p>
+  </div>
+
+  <!-- ── Cards ─────────────────────────────────────────────────────────── -->
+  <div class="cards">
+
+    <!-- Option 1 : Pause -->
+    <div class="option-card pause-card">
+      <span class="badge-recommended">✦ Recommandé</span>
+
+      <div class="card-icon">☕</div>
+      <div>
+        <div class="card-title">Prendre une pause</div>
+        <div class="card-desc" style="margin-top:6px">
+          Ton compte reste intact. Ton profil disparaît du réseau et tu ne reçois plus de notifications. Tu peux revenir exactement là où tu en étais, quand tu te sentiras prêt(e).
+        </div>
+      </div>
+
+      <div class="what-list">
+        <div class="what-item"><span class="dot">✓</span> Ton profil est masqué du forum</div>
+        <div class="what-item"><span class="dot">✓</span> Tes posts et données sont conservés</div>
+        <div class="what-item"><span class="dot">✓</span> Tu peux te reconnecter à tout moment</div>
+        <div class="what-item"><span class="dot">✓</span> Aucune suppression de données</div>
+      </div>
+
+      <div>
+        <div class="duration-label">Durée de la pause</div>
+        <div class="duration-chips">
+          <button class="duration-chip" data-days="7">7 jours</button>
+          <button class="duration-chip active" data-days="30">30 jours</button>
+          <button class="duration-chip" data-days="90">90 jours</button>
+          <button class="duration-chip" data-days="180">6 mois</button>
+        </div>
+      </div>
+
+      <div class="alert" id="pause-alert">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        <span id="pause-alert-text"></span>
+      </div>
+
+      <button class="card-btn btn-pause" id="pause-btn">
+        <div class="btn-spinner"></div>
+        <span class="btn-text">☕ &nbsp;Me mettre en pause</span>
+      </button>
+    </div>
+
+    <!-- Option 2 : Suppression -->
+    <div class="option-card delete-card">
+      <div class="card-icon">🗑️</div>
+      <div>
+        <div class="card-title">Supprimer mon compte</div>
+        <div class="card-desc" style="margin-top:6px">
+          Ton compte sera <strong>masqué immédiatement</strong> puis supprimé définitivement après <strong>30 jours</strong>. Pendant cette période, tu peux contacter le support pour annuler.
+        </div>
+      </div>
+
+      <div class="what-list">
+        <div class="what-item"><span class="dot">✕</span> Ton profil est retiré du forum</div>
+        <div class="what-item"><span class="dot">✕</span> Tous tes posts et commentaires</div>
+        <div class="what-item"><span class="dot">✕</span> Ton historique d'humeur</div>
+        <div class="what-item"><span class="dot">✕</span> Suppression définitive après 30 jours</div>
+      </div>
+
+      <div class="confirm-block">
+        <div class="confirm-label">
+          Tape ton pseudo <span id="pseudo-hint"></span> pour confirmer
+        </div>
+        <input
+          class="confirm-input"
+          id="confirm-input"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="Ton pseudo…"
+        >
+      </div>
+
+      <div class="alert" id="delete-alert">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <span id="delete-alert-text"></span>
+      </div>
+
+      <button class="card-btn btn-delete" id="delete-btn" disabled>
+        <div class="btn-spinner" style="border-color:rgba(185,28,28,.3);border-top-color:#b91c1c"></div>
+        <span class="btn-text">Supprimer définitivement</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Reassurance strip ──────────────────────────────────────────────── -->
+  <div class="reassurance">
+    <div class="breathe-dot"></div>
+    <p>
+      <strong>On t'écoute.</strong> Si tu traverses une période difficile, n'hésite pas à en parler sur le forum ou à contacter un professionnel.
+      Ton bien-être passe avant tout.
+    </p>
+  </div>
+
+  <!-- ── Footer ────────────────────────────────────────────────────────── -->
+  <div class="footer">Prends soin de toi. 💙 &nbsp;©&nbsp;2026&nbsp;Zukuk</div>
+
+  <!-- ── Pause confirmation overlay ────────────────────────────────────── -->
+  <div class="overlay" id="pause-overlay">
+    <div class="overlay-card">
+      <span class="overlay-icon">☕</span>
+      <div class="overlay-title">Confirmer la pause</div>
+      <div class="overlay-body">
+        Ton profil sera masqué pendant <strong id="overlay-duration">30 jours</strong>.
+        Tu pourras te reconnecter à tout moment pour reprendre là où tu t'es arrêté(e).<br><br>
+        Aucune donnée ne sera supprimée.
+      </div>
+      <div class="overlay-actions">
+        <button class="btn-cancel-overlay" onclick="closeOverlay('pause-overlay')">Annuler</button>
+        <button class="btn-confirm-overlay" id="confirm-pause-btn">Oui, me mettre en pause</button>
+      </div>
+    </div>
+  </div>
+  <script src="/frontend/js/delete.js"></script>
+</body>
+</html>

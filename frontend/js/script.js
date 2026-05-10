@@ -361,15 +361,8 @@ function initProfile() {
         window.location.href = "/login";
     });
 
-    $("#profile-delete")?.addEventListener("click", async () => {
-        if (!confirm("Supprimer définitivement ton compte ? Cette action est irréversible.")) return;
-        const message = $("#profile-message");
-        try {
-            await api("/api/me", { method: "DELETE" });
-            window.location.href = "/";
-        } catch (error) {
-            showMessage(message, error.message, true);
-        }
+    $("#profile-delete")?.addEventListener("click", () => {
+        window.location.href = "/delete-account";
     });
 }
 

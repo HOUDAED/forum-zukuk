@@ -25,7 +25,8 @@ const fetchOpts = { credentials: 'include' };
 document.addEventListener('DOMContentLoaded', async () => {
   await checkAuth();          // récupère currentUser
   updateGreeting();
-  renderMoodsLocal();         // affichage immédiat
+  renderMoodsLocal();
+  await loadCurrentMood();    // affichage immédiat
   loadPosts();
   renderStatsLocal();
   fetchRandomQuote();
@@ -388,9 +389,29 @@ const LOCAL_QUOTES = [
   "Chaque petit pas vers la guérison est une victoire.",
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GREETING
-// ─────────────────────────────────────────────────────────────────────────────
+async function loadCurrentMood() {
+  if (!currentUser) return; // Si non connecté, on garde 'Calme' par défaut
+
+  try {
+    const res = await fetch(`${API_BASE}/me/mood-history`, fetchOpts);
+    if (!res.ok) return;
+    
+    const data = await res.json();
+    
+    if (data.history && data.history.length > 0) {
+      const lastMood = data.history[0]; 
+      
+      // On met à jour la variable globale et l'interface visuelle
+      currentMood = lastMood.mood;
+      selectMood(currentMood);
+    }
+
+    
+  } catch (err) {
+    console.error('Erreur chargement humeur:', err);
+  }
+}
+
 async function updateGreeting() {
   const el = document.querySelector('.header-title');
   if (!el) return;

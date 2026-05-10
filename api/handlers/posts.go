@@ -66,14 +66,14 @@ func scanPost(rows interface {
 const postSelectSQL = `
 	SELECT
 		p.id, p.title, p.content, p.is_anonymous, p.created_at,
-		CASE WHEN p.is_anonymous = 1 THEN 'Anonyme' ELSE COALESCE(u.pseudo,'?') END AS author,
-		CASE WHEN p.is_anonymous = 1 THEN '' ELSE COALESCE(u.avatar_url,'') END AS avatar_url,
+		CASE WHEN p.is_anonymous = 1 THEN 'Anonyme' ELSE u.pseudo END AS author,
+		CASE WHEN p.is_anonymous = 1 THEN '' ELSE u.avatar_url END AS avatar_url,
 		COALESCE(cat.name,'') AS category,
 		COUNT(DISTINCT pl.id) AS likes_count,
 		COUNT(DISTINCT com.id) AS comments_count,
 		p.user_id
 	FROM posts p
-	LEFT JOIN users u ON u.id = p.user_id AND u.deleted_at IS NULL
+	INNER JOIN users u ON u.id = p.user_id
 	LEFT JOIN post_categories cat ON cat.id = p.category_id
 	LEFT JOIN post_likes pl ON pl.post_id = p.id
 	LEFT JOIN comments com ON com.post_id = p.id AND com.deleted_at IS NULL`
@@ -104,7 +104,11 @@ func GetPosts(c *gin.Context) {
 	if sortCol == "" { sortCol = "p.created_at" }
 	if order != "asc" { order = "desc" }
 
-	where := []string{"p.deleted_at IS NULL"}
+	where := []string{
+		"p.deleted_at IS NULL",
+		"u.deleted_at IS NULL", // Masque les comptes supprimés
+		"(u.paused_until IS NULL OR u.paused_until < CURRENT_TIMESTAMP)", // Masque les comptes en pause
+	}
 	args  := []interface{}{}
 
 	if query != "" {
@@ -152,23 +156,35 @@ func GetPost(c *gin.Context) {
 		return
 	}
 
-	sql := postSelectSQL + ` WHERE p.id = ? AND p.deleted_at IS NULL GROUP BY p.id`
+	// 1. Filtrer le post lui-même
+	sql := postSelectSQL + ` 
+		WHERE p.id = ? 
+		  AND p.deleted_at IS NULL 
+		  AND u.deleted_at IS NULL 
+		  AND (u.paused_until IS NULL OR u.paused_until < CURRENT_TIMESTAMP)
+		GROUP BY p.id`
+		
 	row := database.ZUKUKDB.QueryRow(sql, id)
 	p, err := scanPost(row)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Post introuvable."})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Post introuvable ou auteur inactif."})
 		return
 	}
 
+	// 2. Filtrer les commentaires
 	rows, err := database.ZUKUKDB.Query(`
 		SELECT c.id, c.content, c.is_anonymous, c.created_at,
-			CASE WHEN c.is_anonymous = 1 THEN 'Anonyme' ELSE COALESCE(u.pseudo,'?') END AS author,
-			CASE WHEN c.is_anonymous = 1 THEN '' ELSE COALESCE(u.avatar_url,'') END AS avatar_url,
+			CASE WHEN c.is_anonymous = 1 THEN 'Anonyme' ELSE u.pseudo END AS author,
+			CASE WHEN c.is_anonymous = 1 THEN '' ELSE u.avatar_url END AS avatar_url,
 			c.user_id
 		FROM comments c
-		LEFT JOIN users u ON u.id = c.user_id AND u.deleted_at IS NULL
-		WHERE c.post_id = ? AND c.deleted_at IS NULL
+		INNER JOIN users u ON u.id = c.user_id
+		WHERE c.post_id = ? 
+		  AND c.deleted_at IS NULL
+		  AND u.deleted_at IS NULL
+		  AND (u.paused_until IS NULL OR u.paused_until < CURRENT_TIMESTAMP)
 		ORDER BY c.created_at ASC`, id)
+		
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur serveur."})
 		return

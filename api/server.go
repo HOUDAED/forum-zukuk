@@ -86,6 +86,7 @@ func main() {
 		protected.POST("/me/avatar",     handlers.UploadAvatar)
 		protected.GET("/me/activity",    handlers.GetMyActivity)
 		protected.GET("/me/connections", handlers.GetConnectionHistory)
+		protected.POST("/me/pause", handlers.PauseAccount)
 
 		// ── Humeur ─────────────────────────────────────────────────────────
 		protected.POST("/mood",              handlers.UpdateMood)       // enregistre + persiste

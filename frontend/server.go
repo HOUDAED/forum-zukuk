@@ -28,14 +28,15 @@ func main() {
 	}
 
 	// ── Static pages (exact match) ───────────────────────────────────────────
-	mux.HandleFunc("/",                page("index.html"))
-	mux.HandleFunc("/login",           page("login.html"))
-	mux.HandleFunc("/register",        page("register.html"))
-	mux.HandleFunc("/board",           page("board.html"))
-	mux.HandleFunc("/profile",         page("profile.html"))
+	mux.HandleFunc("/", page("index.html"))
+	mux.HandleFunc("/login", page("login.html"))
+	mux.HandleFunc("/register", page("register.html"))
+	mux.HandleFunc("/board", page("board.html"))
+	mux.HandleFunc("/profile", page("profile.html"))
+	mux.HandleFunc("/delete-account", page("delete-account.html")) // <--- AJOUTE CETTE LIGNE
 	mux.HandleFunc("/forgot-password", page("forgot-password.html"))
-	mux.HandleFunc("/reset-password",  page("reset-password.html"))
-	mux.HandleFunc("/network",         page("network.html"))
+	mux.HandleFunc("/reset-password", page("reset-password.html"))
+	mux.HandleFunc("/network", page("network.html"))
 
 	// ── Dynamic pages (prefix match) ─────────────────────────────────────────
 	// /post/123  → post.html (ID récupéré côté JS via URL)

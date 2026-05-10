@@ -312,3 +312,33 @@ footer {
     .features { flex-direction: column; align-items: center; }
     .activities-box { padding: 1.5rem; margin-top: 3rem; }
 }
+
+/* Style du lien invité sous le bouton principal */
+.guest-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 24px;
+    color: #818cf8; /* Couleur violette de Zukuk */
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+/* Changement de couleur au survol */
+.guest-link:hover {
+    color: #6366f1;
+}
+
+/* Taille de la flèche */
+.guest-link svg {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.2s ease;
+}
+
+/* Animation de la flèche vers la droite au survol */
+.guest-link:hover svg {
+    transform: translateX(5px);
+}

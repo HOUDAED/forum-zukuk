@@ -1,0 +1,338 @@
+/* ── Reset & base ─────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    --primary:    #8b5cf6;
+    --blue:       #60a5fa;
+    --green:      #34d399;
+    --danger:     #ef4444;
+    --danger-bg:  #fef2f2;
+    --pause-bg:   #f0fdf4;
+    --pause-col:  #059669;
+    --text:       #1e293b;
+    --muted:      #64748b;
+    --border:     #e2e8f0;
+    --white-glass: rgba(255,255,255,0.85);
+    --shadow:     0 20px 60px rgba(0,0,0,0.06);
+}
+
+html, body {
+    min-height: 100vh;
+    font-family: 'Outfit', sans-serif;
+    color: var(--text);
+    background: #f0f4f8;
+    background-image:
+    radial-gradient(circle at 10% 20%, rgba(167,139,250,0.18) 0%, transparent 45%),
+    radial-gradient(circle at 90% 10%, rgba(96,165,250,0.18) 0%,  transparent 45%),
+    radial-gradient(circle at 50% 85%, rgba(52,211,153,0.14) 0%,  transparent 40%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 20px 64px;
+}
+
+/* ── Topbar ───────────────────────────────────────────────────────────── */
+.topbar {
+    width: 100%;
+    max-width: 880px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 48px;
+}
+
+.logo {
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none; font-weight: 700; font-size: 1.2rem; color: var(--text);
+}
+.logo-icon {
+    width: 38px; height: 38px;
+    background: linear-gradient(135deg, var(--blue), var(--primary));
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; position: relative;
+}
+.logo-icon svg { width: 20px; height: 20px; fill: currentColor; }
+.logo-icon::after {
+    content: '';
+    position: absolute; top: -3px; right: -3px;
+    width: 11px; height: 11px;
+    background: var(--green); border-radius: 50%; border: 2px solid #f0f4f8;
+}
+
+.back-btn {
+    display: flex; align-items: center; gap: 6px;
+    color: var(--muted); text-decoration: none; font-size: 0.9rem; font-weight: 500;
+    background: var(--white-glass); border: 1px solid var(--border);
+    padding: 8px 16px; border-radius: 99px;
+    backdrop-filter: blur(8px);
+    transition: all .2s;
+}
+.back-btn:hover { color: var(--primary); border-color: var(--primary); }
+.back-btn svg { width: 16px; height: 16px; }
+
+/* ── Hero text ───────────────────────────────────────────────────────── */
+.hero {
+    text-align: center;
+    max-width: 520px;
+    margin-bottom: 48px;
+    animation: fadeUp .5s ease both;
+}
+.hero-emoji { font-size: 2.8rem; margin-bottom: 12px; display: block; }
+.hero h1 {
+    font-size: 2rem; font-weight: 800; line-height: 1.2;
+    background: linear-gradient(90deg, #60a5fa, #a78bfa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+}
+.hero p {
+    color: var(--muted); font-size: 1rem; line-height: 1.65; font-weight: 400;
+}
+
+/* ── Cards grid ──────────────────────────────────────────────────────── */
+.cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    width: 100%;
+    max-width: 880px;
+}
+
+.option-card {
+    background: var(--white-glass);
+    backdrop-filter: blur(20px);
+    border: 1.5px solid rgba(255,255,255,0.8);
+    border-radius: 28px;
+    padding: 36px 32px;
+    box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 20px;
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp .5s ease both;
+}
+.option-card.pause-card  { animation-delay: .1s; }
+.option-card.delete-card { animation-delay: .2s; }
+
+/* Subtle background tint */
+.pause-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 80% 10%, rgba(52,211,153,0.08), transparent 60%);
+    pointer-events: none;
+}
+.delete-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 80% 10%, rgba(239,68,68,0.05), transparent 60%);
+    pointer-events: none;
+}
+
+/* ── Recommended badge ───────────────────────────────────────────────── */
+.badge-recommended {
+    position: absolute; top: 20px; right: 20px;
+    background: linear-gradient(135deg, #34d399, #059669);
+    color: white; font-size: 0.7rem; font-weight: 700;
+    padding: 4px 10px; border-radius: 99px; text-transform: uppercase; letter-spacing: .05em;
+}
+
+/* ── Card icon ───────────────────────────────────────────────────────── */
+.card-icon {
+    width: 60px; height: 60px; border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; flex-shrink: 0;
+}
+.pause-card  .card-icon { background: #d1fae5; }
+.delete-card .card-icon { background: #fee2e2; }
+
+.card-title { font-size: 1.3rem; font-weight: 700; color: var(--text); }
+.card-desc  { color: var(--muted); font-size: 0.92rem; line-height: 1.65; }
+
+/* ── What happens list ───────────────────────────────────────────────── */
+.what-list { display: flex; flex-direction: column; gap: 8px; }
+.what-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 0.88rem; color: var(--muted);
+}
+.what-item .dot {
+    width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; margin-top: 1px;
+}
+.pause-card  .dot { background: #d1fae5; color: var(--pause-col); }
+.delete-card .dot { background: #fee2e2; color: var(--danger); }
+
+/* ── Duration selector ───────────────────────────────────────────────── */
+.duration-label {
+    font-size: 0.82rem; font-weight: 600; color: var(--muted); margin-bottom: 8px;
+}
+.duration-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.duration-chip {
+    padding: 7px 16px; border-radius: 99px;
+    border: 1.5px solid var(--border);
+    background: white; color: var(--muted);
+    font-size: 0.85rem; font-weight: 500; font-family: inherit;
+    cursor: pointer; transition: all .2s;
+}
+.duration-chip:hover   { border-color: var(--green); color: var(--pause-col); }
+.duration-chip.active  {
+    background: linear-gradient(135deg, #34d399, #059669);
+    color: white; border-color: transparent;
+    box-shadow: 0 4px 12px rgba(52,211,153,0.3);
+}
+
+/* ── Confirmation input ──────────────────────────────────────────────── */
+.confirm-block { display: flex; flex-direction: column; gap: 8px; }
+.confirm-label {
+    font-size: 0.82rem; font-weight: 600; color: var(--muted);
+}
+.confirm-label span { color: var(--danger); font-weight: 700; }
+.confirm-input {
+    width: 100%; background: #fef2f2;
+    border: 2px solid #fecaca; border-radius: 14px;
+    padding: 13px 16px; font-size: 0.95rem; font-family: inherit;
+    color: var(--text); transition: all .2s;
+}
+.confirm-input:focus { outline: none; border-color: var(--danger); background: white; }
+.confirm-input.valid { border-color: var(--danger); background: #fff5f5; }
+
+/* ── Buttons ─────────────────────────────────────────────────────────── */
+.card-btn {
+    width: 100%; padding: 14px; border: none; border-radius: 16px;
+    font-size: 1rem; font-weight: 700; font-family: inherit;
+    cursor: pointer; transition: all .25s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-pause {
+    background: linear-gradient(135deg, #34d399, #059669);
+    color: white; box-shadow: 0 6px 20px rgba(52,211,153,0.3);
+}
+.btn-pause:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(52,211,153,0.4); }
+
+.btn-delete {
+    background: #fee2e2; color: #b91c1c;
+    border: 2px solid #fecaca;
+}
+.btn-delete:hover:not(:disabled) {
+    background: var(--danger); color: white; border-color: var(--danger);
+    transform: translateY(-1px); box-shadow: 0 8px 20px rgba(239,68,68,0.25);
+}
+.btn-delete:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ── Loading spinner in button ───────────────────────────────────────── */
+.btn-spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    display: none;
+}
+.loading .btn-spinner { display: inline-block; }
+.loading .btn-text    { display: none; }
+
+/* ── Alert messages ──────────────────────────────────────────────────── */
+.alert {
+    padding: 12px 16px; border-radius: 12px;
+    font-size: 0.88rem; display: none; align-items: flex-start; gap: 8px;
+}
+.alert.show    { display: flex; }
+.alert.success { background: #d1fae5; color: #065f46; }
+.alert.error   { background: #fee2e2; color: #991b1b; }
+.alert svg     { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+
+/* ── Reassurance strip ───────────────────────────────────────────────── */
+.reassurance {
+    width: 100%; max-width: 880px;
+    background: var(--white-glass); backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.8);
+    border-radius: 20px; padding: 20px 28px;
+    display: flex; align-items: center; gap: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    margin-top: 24px;
+    animation: fadeUp .5s .3s ease both;
+}
+.breathe-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--green); flex-shrink: 0;
+    animation: breathe 4s ease-in-out infinite;
+}
+.reassurance p { color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+.reassurance strong { color: var(--text); }
+
+/* ── Footer ──────────────────────────────────────────────────────────── */
+.footer {
+    margin-top: 40px; font-size: 0.85rem; color: var(--muted);
+    text-align: center; animation: fadeUp .5s .4s ease both;
+}
+
+/* ── Confirmation overlay ─────────────────────────────────────────────── */
+.overlay {
+    position: fixed; inset: 0;
+    background: rgba(15,23,42,0.45);
+    backdrop-filter: blur(6px);
+    z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .3s ease;
+}
+.overlay.show { opacity: 1; pointer-events: all; }
+
+.overlay-card {
+    background: white; border-radius: 28px;
+    padding: 40px 36px; max-width: 440px; width: 100%;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.2);
+    transform: translateY(20px) scale(.97);
+    transition: transform .3s ease;
+    text-align: center;
+}
+.overlay.show .overlay-card { transform: translateY(0) scale(1); }
+
+.overlay-icon {
+    font-size: 3rem; margin-bottom: 16px; display: block;
+    animation: none;
+}
+.overlay-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 10px; color: var(--text); }
+.overlay-body  { color: var(--muted); font-size: 0.95rem; line-height: 1.7; margin-bottom: 28px; }
+.overlay-body strong { color: var(--text); }
+
+.overlay-actions { display: flex; gap: 12px; }
+.overlay-actions button {
+    flex: 1; padding: 13px; border-radius: 14px;
+    font-size: 0.95rem; font-weight: 700; font-family: inherit; cursor: pointer;
+    transition: all .2s; border: none;
+}
+.btn-cancel-overlay {
+    background: #f1f5f9; color: var(--muted);
+}
+.btn-cancel-overlay:hover { background: #e2e8f0; color: var(--text); }
+.btn-confirm-overlay {
+    background: linear-gradient(135deg, #34d399, #059669); color: white;
+    box-shadow: 0 6px 20px rgba(52,211,153,0.3);
+}
+.btn-confirm-overlay:hover { transform: translateY(-1px); }
+
+/* ── Animations ──────────────────────────────────────────────────────── */
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes breathe {
+    0%,100% { transform: scale(1);   opacity: .4; }
+    50%      { transform: scale(1.7); opacity: 1; box-shadow: 0 0 12px rgba(52,211,153,.5); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%,60% { transform: translateX(-5px); }
+    40%,80% { transform: translateX(5px); }
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+    .cards { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 1.6rem; }
+    .option-card { padding: 28px 22px; }
+    .overlay-card { padding: 32px 24px; }
+    .overlay-actions { flex-direction: column; }
+}
