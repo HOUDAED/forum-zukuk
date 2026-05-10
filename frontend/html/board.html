@@ -114,16 +114,16 @@
                                 <line x1="5" y1="12" x2="19" y2="12"></line>
                             </svg>
                         </button>
-                        
-                        <button class="btn-icon btn-secondary">
+                        <button class="btn-icon btn-secondary" id="header-notif-btn" style="position: relative;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                                 <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                             </svg>
-                            <span class="notification-badge">3</span>
+                            <span class="notification-badge" id="header-notif-badge" style="display: none;">0</span>
                         </button>
                     </div>
                 </header>
+                {{ template "notifications" . }}
 
                 <!-- Humeur -->
                 <section class="mood-section">
@@ -181,5 +181,6 @@
     </div>
 
     <script src="/frontend/js/board.js"></script>
+
 </body>
 </html>

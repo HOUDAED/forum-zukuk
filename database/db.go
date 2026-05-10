@@ -172,6 +172,18 @@ func createTables() {
 			reason      TEXT     DEFAULT '',
 			created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)`,
+
+		`CREATE TABLE IF NOT EXISTS notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            actor_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            type TEXT NOT NULL CHECK(type IN ('like', 'comment')),
+            post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+            is_read INTEGER NOT NULL DEFAULT 0,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )`,
+
+        `CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_posts_user       ON posts(user_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_posts_category   ON posts(category_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_posts_created    ON posts(created_at DESC)`,
@@ -423,51 +435,47 @@ func UpdatePassword(userID int, newPasswordHash string) error {
 	return tx.Commit()
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// LIKES
-// ═════════════════════════════════════════════════════════════════════════════
-
 func TogglePostLike(postID, userID int) (liked bool, count int, err error) {
-	var exists int
-	if err := ZUKUKDB.QueryRow(`
-		SELECT COUNT(*) FROM posts p
-		JOIN users u ON u.id = p.user_id
-		WHERE p.id = ? AND p.deleted_at IS NULL AND u.deleted_at IS NULL`,
-		postID,
-	).Scan(&exists); err != nil {
-		return false, 0, err
-	}
-	if exists == 0 {
-		return false, 0, fmt.Errorf("publication introuvable")
-	}
+    var ownerID int // L'ID de l'auteur du post
+    
+    // On vérifie que le post existe ET on récupère l'ID de son auteur
+    if err := ZUKUKDB.QueryRow(`
+        SELECT p.user_id FROM posts p
+        JOIN users u ON u.id = p.user_id
+        WHERE p.id = ? AND p.deleted_at IS NULL AND u.deleted_at IS NULL`,
+        postID,
+    ).Scan(&ownerID); err != nil {
+        return false, 0, fmt.Errorf("publication introuvable")
+    }
 
-	res, execErr := ZUKUKDB.Exec(
-		`INSERT OR IGNORE INTO post_likes (post_id, user_id) VALUES (?, ?)`, postID, userID,
-	)
-	if execErr != nil {
-		return false, 0, execErr
-	}
-	rows, _ := res.RowsAffected()
-	if rows == 0 {
-		ZUKUKDB.Exec(`DELETE FROM post_likes WHERE post_id = ? AND user_id = ?`, postID, userID)
-		liked = false
-	} else {
-		liked = true
-	}
+    res, execErr := ZUKUKDB.Exec(
+        `INSERT OR IGNORE INTO post_likes (post_id, user_id) VALUES (?, ?)`, postID, userID,
+    )
+    if execErr != nil {
+        return false, 0, execErr
+    }
+    
+    rows, _ := res.RowsAffected()
+    if rows == 0 {
+        ZUKUKDB.Exec(`DELETE FROM post_likes WHERE post_id = ? AND user_id = ?`, postID, userID)
+        liked = false
+    } else {
+        liked = true
+        // 🔔 NOUVEAU : On déclenche la notification ici !
+        CreateNotification(ownerID, userID, "like", postID)
+    }
 
-	ZUKUKDB.QueryRow(`
-		SELECT COUNT(*) FROM post_likes pl
-		JOIN posts p ON p.id = pl.post_id
-		WHERE pl.post_id = ? AND p.deleted_at IS NULL`,
-		postID,
-	).Scan(&count)
+    // ... la suite de ta fonction avec le SELECT COUNT(*) reste identique ...
+    ZUKUKDB.QueryRow(`
+        SELECT COUNT(*) FROM post_likes pl
+        JOIN posts p ON p.id = pl.post_id
+        WHERE pl.post_id = ? AND p.deleted_at IS NULL`,
+        postID,
+    ).Scan(&count)
 
-	return liked, count, nil
+    return liked, count, nil
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// CLEANER — tâche de fond toutes les heures
-// ═════════════════════════════════════════════════════════════════════════════
 
 func startCleaner() {
 	go func() {
@@ -594,4 +602,19 @@ func ResumeUserAccount(userID int) error {
 		return fmt.Errorf("erreur lors de la réactivation du compte : %w", err)
 	}
 	return nil
+}
+
+func CreateNotification(userID, actorID int, notifType string, postID int) error {
+    // Ne pas envoyer de notification à soi-même
+    if userID == actorID {
+        return nil
+    }
+    
+    // Insérer la notification
+    _, err := ZUKUKDB.Exec(`
+        INSERT INTO notifications (user_id, actor_id, type, post_id)
+        VALUES (?, ?, ?, ?)`, 
+        userID, actorID, notifType, postID,
+    )
+    return err
 }

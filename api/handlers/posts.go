@@ -328,51 +328,56 @@ func GetLikeStatus(c *gin.Context) {
 // ─── AddComment ───────────────────────────────────────────────────────────────
 
 func AddComment(c *gin.Context) {
-	userID := c.GetInt("userID")
-	postID, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalide."})
-		return
-	}
-	var req CommentRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Contenu requis."})
-		return
-	}
-	req.Content = strings.TrimSpace(req.Content)
-	if len(req.Content) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Commentaire vide."})
-		return
-	}
+    userID := c.GetInt("userID")
+    postID, err := strconv.Atoi(c.Param("id"))
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "ID invalide."})
+        return
+    }
+    var req CommentRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Contenu requis."})
+        return
+    }
+    req.Content = strings.TrimSpace(req.Content)
+    if len(req.Content) == 0 {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Commentaire vide."})
+        return
+    }
 
-	var exists int
-	database.ZUKUKDB.QueryRow(`SELECT COUNT(*) FROM posts WHERE id = ? AND deleted_at IS NULL`, postID).Scan(&exists)
-	if exists == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Post introuvable."})
-		return
-	}
+    // 1. On vérifie que le post existe ET on récupère l'ID de son auteur (ownerID)
+    var ownerID int
+    if err := database.ZUKUKDB.QueryRow(`SELECT user_id FROM posts WHERE id = ? AND deleted_at IS NULL`, postID).Scan(&ownerID); err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Post introuvable."})
+        return
+    }
 
-	result, err := database.ZUKUKDB.Exec(`
-		INSERT INTO comments (post_id, user_id, content, is_anonymous) VALUES (?, ?, ?, ?)`,
-		postID, userID, req.Content, req.IsAnonymous)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur ajout commentaire."})
-		return
-	}
-	newID, _ := result.LastInsertId()
+    // 2. On insère le commentaire
+    result, err := database.ZUKUKDB.Exec(`
+        INSERT INTO comments (post_id, user_id, content, is_anonymous) VALUES (?, ?, ?, ?)`,
+        postID, userID, req.Content, req.IsAnonymous)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur ajout commentaire."})
+        return
+    }
+    newID, _ := result.LastInsertId()
 
-	var cm CommentItem
-	database.ZUKUKDB.QueryRow(`
-		SELECT c.id, c.content, c.is_anonymous, c.created_at,
-			CASE WHEN c.is_anonymous = 1 THEN 'Anonyme' ELSE COALESCE(u.pseudo,'?') END,
-			CASE WHEN c.is_anonymous = 1 THEN '' ELSE COALESCE(u.avatar_url,'') END,
-			c.user_id
-		FROM comments c
-		LEFT JOIN users u ON u.id = c.user_id
-		WHERE c.id = ?`, newID,
-	).Scan(&cm.ID, &cm.Content, &cm.IsAnonymous, &cm.CreatedAt, &cm.Author, &cm.AvatarURL, &cm.UserID)
+    // 🔔 3. NOUVEAU : On déclenche la notification ici !
+    database.CreateNotification(ownerID, userID, "comment", postID)
 
-	c.JSON(http.StatusCreated, cm)
+    // 4. On renvoie le commentaire fraîchement créé au frontend
+    var cm CommentItem
+    database.ZUKUKDB.QueryRow(`
+        SELECT c.id, c.content, c.is_anonymous, c.created_at,
+            CASE WHEN c.is_anonymous = 1 THEN 'Anonyme' ELSE COALESCE(u.pseudo,'?') END,
+            CASE WHEN c.is_anonymous = 1 THEN '' ELSE COALESCE(u.avatar_url,'') END,
+            c.user_id
+        FROM comments c
+        LEFT JOIN users u ON u.id = c.user_id
+        WHERE c.id = ?`, newID,
+    ).Scan(&cm.ID, &cm.Content, &cm.IsAnonymous, &cm.CreatedAt, &cm.Author, &cm.AvatarURL, &cm.UserID)
+
+    c.JSON(http.StatusCreated, cm)
 }
 
 // ─── UpdateComment ────────────────────────────────────────────────────────────
