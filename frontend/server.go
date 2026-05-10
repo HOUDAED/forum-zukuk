@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -12,58 +13,76 @@ import (
 func main() {
 	mux := http.NewServeMux()
 
-	staticDir := filepath.Join(".", "frontend")
-
-	// ── Static assets ────────────────────────────────────────────────────────
-	mux.Handle("/frontend/css/", http.StripPrefix("/frontend/css/",
-		http.FileServer(http.Dir(filepath.Join(staticDir, "css")))))
-	mux.Handle("/frontend/js/", http.StripPrefix("/frontend/js/",
-		http.FileServer(http.Dir(filepath.Join(staticDir, "js")))))
-
-	// ── Page helper ──────────────────────────────────────────────────────────
-	page := func(file string) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			http.ServeFile(w, r, filepath.Join(staticDir, "html", file))
+	// 1. Détection robuste du dossier
+	baseDir := "."
+	if _, err := os.Stat(filepath.Join(".", "html")); os.IsNotExist(err) {
+		if _, err := os.Stat(filepath.Join(".", "frontend", "html")); err == nil {
+			baseDir = "frontend"
 		}
 	}
 
-	// ── Static pages (exact match) ───────────────────────────────────────────
-	mux.HandleFunc("/", page("index.html"))
-	mux.HandleFunc("/login", page("login.html"))
-	mux.HandleFunc("/register", page("register.html"))
-	mux.HandleFunc("/board", page("board.html"))
-	mux.HandleFunc("/profile", page("profile.html"))
-	mux.HandleFunc("/delete-account", page("delete-account.html")) // <--- AJOUTE CETTE LIGNE
-	mux.HandleFunc("/forgot-password", page("forgot-password.html"))
-	mux.HandleFunc("/reset-password", page("reset-password.html"))
-	mux.HandleFunc("/network", page("network.html"))
+	mux.Handle("/frontend/css/", http.StripPrefix("/frontend/css/", http.FileServer(http.Dir(filepath.Join(baseDir, "css")))))
+	mux.Handle("/frontend/js/", http.StripPrefix("/frontend/js/", http.FileServer(http.Dir(filepath.Join(baseDir, "js")))))
 
-	// ── Dynamic pages (prefix match) ─────────────────────────────────────────
-	// /post/123  → post.html (ID récupéré côté JS via URL)
-	mux.HandleFunc("/post/", func(w http.ResponseWriter, r *http.Request) {
-		// Refuse les tentatives de path-traversal
-		if strings.Contains(r.URL.Path, "..") {
-			http.NotFound(w, r)
-			return
+	// 2. Pré-chargement ULTRA STRICT des templates
+	t := template.New("Zukuk")
+
+	// 🔴 ON EXIGE LES PARTIALS (Arrêt immédiat si introuvables)
+	partialsPath := filepath.Join(baseDir, "html", "partials", "*.html")
+	if _, err := t.ParseGlob(partialsPath); err != nil {
+		log.Fatalf("\n🚨 ERREUR FATALE (DÉMARRAGE STOPPÉ) 🚨\nJe ne trouve aucun fichier dans : %s\n👉 Vérifie que le dossier 'partials' existe bien.\n👉 As-tu bien SAUVEGARDÉ tes fichiers dedans ?\nErreur technique : %v\n\n", partialsPath, err)
+	}
+
+	// 🔴 ON EXIGE LES PAGES
+	pagesPath := filepath.Join(baseDir, "html", "*.html")
+	if _, err := t.ParseGlob(pagesPath); err != nil {
+		log.Fatalf("\n🚨 ERREUR FATALE (DÉMARRAGE STOPPÉ) 🚨\nJe ne trouve aucune page HTML dans : %s\nErreur technique : %v\n\n", pagesPath, err)
+	}
+
+	// 3. Confirmation visuelle dans le terminal
+	fmt.Println("---------------------------------------------------")
+	fmt.Println("✅ SUCCÈS ! Les templates suivants sont chargés :")
+	for _, tmpl := range t.Templates() {
+		fmt.Println("   -", tmpl.Name())
+	}
+	fmt.Println("---------------------------------------------------")
+
+	// 4. Fonction pour afficher les pages
+	page := func(file string, active string) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			data := map[string]interface{}{"Active": active}
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			if err := t.ExecuteTemplate(w, file, data); err != nil {
+				http.Error(w, "Erreur d'affichage : "+err.Error(), http.StatusInternalServerError)
+			}
 		}
-		http.ServeFile(w, r, filepath.Join(staticDir, "html", "post.html"))
+	}
+
+	// 5. Routes
+	mux.HandleFunc("/", page("index.html", "Accueil"))
+	mux.HandleFunc("/login", page("login.html", ""))
+	mux.HandleFunc("/register", page("register.html", ""))
+	mux.HandleFunc("/board", page("board.html", "Accueil"))
+	mux.HandleFunc("/profile", page("profile.html", "Profil"))
+	mux.HandleFunc("/delete-account", page("delete-account.html", ""))
+	mux.HandleFunc("/forgot-password", page("forgot-password.html", ""))
+	mux.HandleFunc("/reset-password", page("reset-password.html", ""))
+	mux.HandleFunc("/network", page("network.html", "Réseau"))
+
+	mux.HandleFunc("/post/", func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "..") { http.NotFound(w, r); return }
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		t.ExecuteTemplate(w, "post.html", map[string]interface{}{"Active": ""})
 	})
 
-	// /profile/123 → public_profile.html
 	mux.HandleFunc("/profile/", func(w http.ResponseWriter, r *http.Request) {
-		if strings.Contains(r.URL.Path, "..") {
-			http.NotFound(w, r)
-			return
-		}
-		http.ServeFile(w, r, filepath.Join(staticDir, "html", "public_profile.html"))
+		if strings.Contains(r.URL.Path, "..") { http.NotFound(w, r); return }
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		t.ExecuteTemplate(w, "public_profile.html", map[string]interface{}{"Active": ""})
 	})
 
 	port := os.Getenv("FRONTEND_PORT")
-	if port == "" {
-		port = "3000"
-	}
-	fmt.Printf("Serveur Frontend Zukuk démarré sur http://localhost:%s\n", port)
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
-		log.Fatalf("Erreur démarrage serveur frontend : %v", err)
-	}
+	if port == "" { port = "3000" }
+	fmt.Printf("🚀 Serveur Frontend Zukuk démarré sur http://localhost:%s\n", port)
+	log.Fatal(http.ListenAndServe(":"+port, mux))
 }

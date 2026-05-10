@@ -106,8 +106,8 @@ function renderPost(post, liked) {
   const isOwner = currentUser && currentUser.id === post.user_id;
   const [bgColor, textColor] = avatarColors(post.author);
 
-  const avatarHTML = post.avatar_url
-    ? `<img src="${post.avatar_url}" style="width:48px;height:48px;border-radius:50%;object-fit:cover" alt="avatar">`
+const avatarHTML = post.avatar_url
+    ? `<img src="${post.avatar_url.startsWith('http') ? post.avatar_url : 'http://localhost:8081' + post.avatar_url}" style="width:48px;height:48px;border-radius:50%;object-fit:cover" alt="avatar">`
     : `<div style="width:48px;height:48px;border-radius:50%;background:${bgColor};color:${textColor};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0">${initials(post.author)}</div>`;
 
   const fullDate = new Date(post.created_at).toLocaleDateString('fr-FR', {
@@ -225,7 +225,7 @@ function buildCommentHTML(cm) {
   const [bgColor, textColor] = avatarColors(cm.author);
 
   const avatarHTML = cm.avatar_url
-    ? `<img src="${cm.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" alt="avatar">`
+    ? `<img src="${cm.avatar_url.startsWith('http') ? cm.avatar_url : 'http://localhost:8081' + cm.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" alt="avatar">`
     : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${bgColor};color:${textColor};font-weight:700;font-size:11px;border-radius:50%">${initials(cm.author)}</div>`;
 
   return `

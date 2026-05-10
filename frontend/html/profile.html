@@ -4,120 +4,136 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zukuk - Mon Profil</title>
+    <link rel="stylesheet" href="/frontend/css/board.css">
     <link rel="stylesheet" href="/frontend/css/auth.css">
+<style>
+        /* Force la page à prendre 100% de l'écran sans espace en haut */
+        body { padding-top: 0 !important; margin: 0; overflow: hidden; }
+
+        /* Protège le logo de la sidebar contre auth.css */
+        .sidebar .logo-container { margin-bottom: 0 !important; }
+        .sidebar .logo-icon {
+            width: 24px !important;
+            height: 24px !important;
+            background: none !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+        }
+        .sidebar .logo-icon::after { display: none !important; }
+    </style>
 </head>
-<body class="profile-page">
-    <div class="bg-gradients" aria-hidden="true"></div>
-
-    <header class="header-top">
-        <div class="logo-container">
-            <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" stroke="none" fill="currentColor"/></svg></div>
-            <span>Zukuk</span>
-        </div>
-        <a href="/board" style="color: var(--text-gray); text-decoration: none; font-size: 1rem; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; margin-bottom: 1rem;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-            Retour au forum
-        </a>
-    </header>
-
-    <main class="profile-dashboard">
+<body>
+    <div class="app-container">
         
-        <!-- Bannière -->
-        <div class="profile-cover">
-            <img id="profile-avatar" class="profile-avatar-large" alt="Avatar" src="" hidden>
-        </div>
+        {{ template "sidebar" . }}
 
-        <!-- Grille Principale -->
-        <div class="bento-grid">
-            
-            <!-- COLONNE GAUCHE : Paramètres Personnels -->
-            <div class="bento-card">
-                <div class="bento-header">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                    Informations du compte
-                </div>
+        <main class="main-content">
+            <div class="background-gradient" aria-hidden="true"></div>
+
+            <div class="content-wrapper">
                 
-                <form id="profile-form" style="display: flex; flex-direction: column; gap: 16px;">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                        <div class="modern-input-group">
-                            <label>Pseudo</label>
-                            <input id="profile-pseudo" class="modern-input" type="text">
-                        </div>
-                        <div class="modern-input-group">
-                            <label>Email</label>
-                            <input id="profile-email" class="modern-input" type="email">
-                        </div>
+                <header class="header" style="margin-bottom: 24px;">
+                    <div>
+                        <h1 class="header-title">Mon Profil</h1>
+                        <p class="header-subtitle">Gère tes informations et ton activité</p>
                     </div>
+                </header>
 
-                    <div class="modern-input-group" style="margin-top: 10px;">
-                        <label>Nouvelle photo de profil</label>
-                        <input id="profile-avatar-file" class="modern-input" type="file" accept="image/*" style="padding: 10px;">
-                    </div>
-
-                    <div class="bento-header" style="margin-top: 16px; font-size: 1.1rem;">Sécurité</div>
+                <div class="profile-dashboard">
                     
-                    <div class="modern-input-group">
-                        <label>Mot de passe actuel</label>
-                        <input id="profile-current-password" class="modern-input" type="password" placeholder="Requis pour changer de mot de passe">
+                    <div class="profile-cover">
+                        <img id="profile-avatar" class="profile-avatar-large" alt="Avatar" src="" hidden>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                        <div class="modern-input-group">
-                            <label>Nouveau mot de passe</label>
-                            <input id="profile-password" class="modern-input" type="password">
+
+                    <div class="bento-grid">
+                        
+                        <div class="bento-card">
+                            <div class="bento-header">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                Informations du compte
+                            </div>
+                            
+                            <form id="profile-form" style="display: flex; flex-direction: column; gap: 16px;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                    <div class="modern-input-group">
+                                        <label>Pseudo</label>
+                                        <input id="profile-pseudo" class="modern-input" type="text">
+                                    </div>
+                                    <div class="modern-input-group">
+                                        <label>Email</label>
+                                        <input id="profile-email" class="modern-input" type="email">
+                                    </div>
+                                </div>
+
+                                <div class="modern-input-group" style="margin-top: 10px;">
+                                    <label>Nouvelle photo de profil</label>
+                                    <input id="profile-avatar-file" class="modern-input" type="file" accept="image/*" style="padding: 10px;">
+                                </div>
+
+                                <div class="bento-header" style="margin-top: 16px; font-size: 1.1rem;">Sécurité</div>
+                                
+                                <div class="modern-input-group">
+                                    <label>Mot de passe actuel</label>
+                                    <input id="profile-current-password" class="modern-input" type="password" placeholder="Requis pour changer">
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                    <div class="modern-input-group">
+                                        <label>Nouveau mot de passe</label>
+                                        <input id="profile-password" class="modern-input" type="password">
+                                    </div>
+                                    <div class="modern-input-group">
+                                        <label>Confirmer</label>
+                                        <input id="profile-confirm-password" class="modern-input" type="password">
+                                    </div>
+                                </div>
+
+                                <div class="info-box" id="profile-message" hidden style="margin-top: 10px;"></div>
+
+                                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; margin-top: 16px;">
+                                    <button type="button" class="btn-primary" id="profile-save">Mettre à jour</button>
+                                    <button type="button" class="btn-secondary" id="profile-logout">Déconnexion</button>
+                                    <button type="button" class="btn-danger" id="profile-delete">Supprimer</button>
+                                </div>
+                            </form>
                         </div>
-                        <div class="modern-input-group">
-                            <label>Confirmer</label>
-                            <input id="profile-confirm-password" class="modern-input" type="password">
+
+                        <div style="display: flex; flex-direction: column; gap: 24px;">
+                            
+                            <div class="bento-card">
+                                <div class="bento-header">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                                    Mon Activité
+                                </div>
+
+                                <div class="segmented-control">
+                                    <button id="tab-posts" class="seg-btn active">Discussions</button>
+                                    <button id="tab-comments" class="seg-btn">Commentaires</button>
+                                </div>
+
+                                <ul id="user-posts-list" class="bento-list">
+                                    <li style="color: var(--text-gray);">Chargement...</li>
+                                </ul>
+                                <ul id="user-comments-list" class="bento-list" style="display: none;">
+                                    <li style="color: var(--text-gray);">Chargement...</li>
+                                </ul>
+                            </div>
+
+                            <div class="bento-card">
+                                <div class="bento-header">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                    Dernières connexions
+                                </div>
+                                <ul id="connections-list" class="bento-list">
+                                    <li style="color: var(--text-gray);">Chargement...</li>
+                                </ul>
+                            </div>
+
                         </div>
                     </div>
-
-                    <div class="info-box" id="profile-message" hidden style="margin-top: 10px;"></div>
-
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; margin-top: 16px;">
-                        <button type="button" class="btn-primary" id="profile-save">Mettre à jour</button>
-                        <button type="button" class="btn-secondary" id="profile-logout">Déconnexion</button>
-                        <button type="button" class="btn-danger" id="profile-delete">Supprimer</button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- COLONNE DROITE : Activité et Connexions -->
-            <div style="display: flex; flex-direction: column; gap: 24px;">
-                
-                <!-- Carte Activité -->
-                <div class="bento-card">
-                    <div class="bento-header">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                        Mon Activité
-                    </div>
-
-                    <div class="segmented-control">
-                        <button id="tab-posts" class="seg-btn active">Discussions</button>
-                        <button id="tab-comments" class="seg-btn">Commentaires</button>
-                    </div>
-
-                    <ul id="user-posts-list" class="bento-list">
-                        <li style="color: var(--text-gray);">Chargement...</li>
-                    </ul>
-                    <ul id="user-comments-list" class="bento-list" style="display: none;">
-                        <li style="color: var(--text-gray);">Chargement...</li>
-                    </ul>
                 </div>
-
-                <!-- Carte Connexions -->
-                <div class="bento-card">
-                    <div class="bento-header">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                        Dernières connexions
-                    </div>
-                    <ul id="connections-list" class="bento-list">
-                        <li style="color: var(--text-gray);">Chargement...</li>
-                    </ul>
-                </div>
-
             </div>
-        </div>
-    </main>
+        </main>
+    </div>
 
     <script src="/frontend/js/script.js"></script>
 </body>

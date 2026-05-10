@@ -90,8 +90,9 @@ function buildMemberCard(m, index) {
   const moodEmoji  = MOOD_EMOJIS[m.current_mood] || '';
   const delay      = `animation-delay:${index * 40}ms`;
 
-  const avatarHTML = m.avatar_url
-    ? `<img src="${m.avatar_url}" alt="avatar">`
+  // 🔴 C'EST CETTE LIGNE QUI RÈGLE TON PROBLÈME (Ajout de http://localhost:8081)
+const avatarHTML = m.avatar_url
+    ? `<img src="${m.avatar_url.startsWith('http') ? m.avatar_url : 'http://localhost:8081' + m.avatar_url}" alt="avatar">`
     : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${bgColor};color:${textColor};font-weight:700;font-size:18px;border-radius:50%">${initials(m.pseudo)}</div>`;
 
   const moodHTML = m.current_mood
@@ -110,7 +111,7 @@ function buildMemberCard(m, index) {
             ${m.posts_count}
           </span>
           <span class="member-stat">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2-2z"></path></svg>
             ${m.comments_count}
           </span>
           <span class="member-stat">

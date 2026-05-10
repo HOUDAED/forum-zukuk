@@ -120,7 +120,7 @@ function renderPosts(posts) {
       <div class="discussion-header">
         <div class="discussion-avatar">
           ${post.avatar_url
-            ? `<img src="${post.avatar_url}" style="width:40px;height:40px;border-radius:50%;object-fit:cover" alt="avatar">`
+            ? `<img src="${post.avatar_url.startsWith('http') ? post.avatar_url : 'http://localhost:8081' + post.avatar_url}" style="width:40px;height:40px;border-radius:50%;object-fit:cover" alt="avatar">`
             : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`}
         </div>
         <div class="discussion-author-info">
