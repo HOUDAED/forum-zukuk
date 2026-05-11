@@ -115,6 +115,17 @@ func main() {
 		// Rétrocompatibilité like board.js v1
 		protected.POST("/discussion/:id/like", handlers.LikeDiscussion)
 		protected.GET("/me/dashboard-stats", handlers.GetUserDashboardStats)
+
+		// ── Paramètres Zukuk ───────────────────────────────────────────────
+		settings := protected.Group("/settings")
+		{
+			settings.GET("/", handlers.GetSettings)                       // Récupérer les préférences
+			settings.PUT("/", handlers.UpdateSettings)                    // Sauvegarder les préférences
+			settings.GET("/sessions", handlers.GetSessions)               // Voir les connexions actives
+			settings.POST("/sessions/revoke", handlers.RevokeAllSessions) // Déconnecter les autres
+			settings.GET("/export", handlers.ExportMyData)                // Téléchargement RGPD
+			settings.POST("/pause", handlers.PauseAccount)                // Alias pour la Digital Detox
+		}
 	}
 
 	port := os.Getenv("API_PORT")

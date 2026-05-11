@@ -40,6 +40,7 @@ func createTables() {
 			email          TEXT     NOT NULL UNIQUE,
 			password_hash  TEXT     NOT NULL,
 			avatar_url     TEXT     NOT NULL DEFAULT '',
+			bio            TEXT     DEFAULT '',
 			is_admin       INTEGER  NOT NULL DEFAULT 0,
 			is_anonymous   INTEGER  NOT NULL DEFAULT 0,
 			email_verified INTEGER  NOT NULL DEFAULT 0,
@@ -144,6 +145,18 @@ func createTables() {
 			max_places  INTEGER  NOT NULL DEFAULT 0,
 			created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)`,
+
+		`CREATE TABLE IF NOT EXISTS user_settings (
+			user_id         INTEGER  PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+			anon_by_default INTEGER  NOT NULL DEFAULT 0,
+			show_mood        INTEGER  NOT NULL DEFAULT 1,
+			notif_likes      INTEGER  NOT NULL DEFAULT 1,
+			notif_comments   INTEGER  NOT NULL DEFAULT 1,
+			theme            TEXT     NOT NULL DEFAULT 'light',
+			reduce_anim      INTEGER  NOT NULL DEFAULT 0,
+			content_density  TEXT     NOT NULL DEFAULT 'normal',
+			updated_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+		);`,
 		`CREATE TABLE IF NOT EXISTS activity_participants (
 			activity_id INTEGER  NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
 			user_id     INTEGER  NOT NULL REFERENCES users(id) ON DELETE CASCADE,
