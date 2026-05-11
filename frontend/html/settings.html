@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Paramètres - Zukuk</title>
+    <link rel="stylesheet" href="/frontend/css/board.css">
+    <link rel="stylesheet" href="/frontend/css/settings.css">
+</head>
+<body>
+    <div class="app-container">
+        {{ template "sidebar" . }}
+        
+        <main class="main-content">
+            <div class="background-gradient"></div>
+            
+            <div class="content-wrapper">
+                <header class="header">
+                    <h1 class="header-title">Paramètres</h1>
+                </header>
+
+                <div class="settings-card">
+                    <nav class="settings-nav">
+                        <button class="tab-link" onclick="window.location.href='/profile'">👤 Profil</button>
+                        
+                        <button class="tab-link active" data-target="interface">🎨 Interface</button>
+                        <button class="tab-link" data-target="security">🔒 Sécurité</button>
+                        <button class="tab-link" data-target="data">📦 Mes Données</button>
+                    </nav>
+
+                    <div class="settings-main">
+                        
+                        <div id="interface" class="tab-content active">
+                            <div class="form-section">
+                                <h3>Expérience & Thème</h3>
+                                <div class="toggle-group">
+                                    <div>
+                                        <strong>Anonymat automatique</strong>
+                                        <p class="sub-text">Cocher 'Anonyme' par défaut sur mes nouveaux posts</p>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="pref-anon">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                
+                                <div class="theme-selector" style="margin-top: 20px;">
+                                    <strong>Thème du forum</strong>
+                                    <div class="theme-options">
+                                        <button class="theme-btn" data-theme="light">Clair</button>
+                                        <button class="theme-btn" data-theme="dark">Sombre</button>
+                                        <button class="theme-btn" data-theme="glass">Glassmorphism ✨</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="security" class="tab-content">
+                            <div class="form-section">
+                                <h3>Sessions actives</h3>
+                                <p class="sub-text">Voici les appareils actuellement connectés à ton compte.</p>
+                                <div id="sessions-list" class="sessions-list">
+                                    <div style="color: #64748b;">Chargement des sessions...</div>
+                                </div>
+                                <button class="btn-action btn-outline" id="btn-revoke-sessions" style="margin-top: 15px;">
+                                    Déconnecter tous les autres appareils
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="data" class="tab-content">
+                            <div class="form-section">
+                                <h3>Gestion des données</h3>
+                                <p class="sub-text">Conformément au RGPD, tu peux télécharger l'intégralité de ton activité sur Zukuk.</p>
+                                <button class="btn-action btn-export" id="btn-export">📥 Exporter mes données (.json)</button>
+                            </div>
+                            
+                            <hr class="divider">
+                            
+                            <div class="form-section danger-zone">
+                                <h3>Zone sensible</h3>
+                                <p class="sub-text">Besoin de faire une pause ou de nous quitter ? Mets ton compte en sommeil ou supprime-le définitivement. Tu pourras gérer tout ça sur la page dédiée.</p>
+                                <button type="button" class="btn-danger" id="profile-delete" onclick="window.location.href='/delete-account'">🧘 Gérer la pause / Suppression</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/frontend/js/settings.js"></script>
+</body>
+</html>

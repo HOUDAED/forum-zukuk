@@ -4,6 +4,31 @@ const $ = (selector) => document.querySelector(selector);
 const EYE_ICON     = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
 const EYE_OFF_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🎨 SYSTÈME DE THÈME GLOBAL ZUKUK
+// ─────────────────────────────────────────────────────────────────────────────
+
+// 1. Anti-scintillement : Appliquer le thème local IMMÉDIATEMENT
+const savedTheme = localStorage.getItem('zukuk_theme') || 'light';
+document.body.setAttribute('data-theme', savedTheme);
+
+// 2. Synchronisation BDD : Vérifier le vrai thème de l'utilisateur au chargement
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const res = await fetch('http://localhost:8081/api/settings/', { credentials: 'include' });
+        if (res.ok) {
+            const settings = await res.json();
+            if (settings.theme && settings.theme !== savedTheme) {
+                // Si la BDD a un thème différent (ex: connexion sur un nouveau PC), on met à jour
+                document.body.setAttribute('data-theme', settings.theme);
+                localStorage.setItem('zukuk_theme', settings.theme);
+            }
+        }
+    } catch (e) {
+        // Utilisateur non connecté, on garde le thème local
+    }
+});
 function wrapInlinePasswords() {
     document.querySelectorAll('input[type="password"].inline-input').forEach(input => {
         if (input.parentElement.classList.contains('password-wrapper')) return;
@@ -24,7 +49,6 @@ function wrapInlinePasswords() {
         wrapper.appendChild(btn);
     });
 }
-
 
 function wrapModernPasswords() {
     document.querySelectorAll('input[type="password"].modern-input').forEach(input => {
@@ -69,7 +93,6 @@ if (dynamicInputs.length > 0) {
         adjustWidth.call(input);
     });
 }
-
 
 function showMessage(element, text, isError = false) {
     if (!element) return;
@@ -169,9 +192,12 @@ async function loadProfile() {
     const me = await api("/api/me");
     const pseudoInput = $("#profile-pseudo");
     const emailInput  = $("#profile-email");
+    const bioInput    = $("#profile-bio");
 
     if (pseudoInput) pseudoInput.value = me.pseudo || "";
     if (emailInput)  emailInput.value  = me.email  || "";
+    // 🔥 AJOUT DE LA BIO AU CHARGEMENT 🔥
+    if (bioInput)    bioInput.value    = me.bio    || "";
 
     const avatar = $("#profile-avatar");
     if (avatar) {
@@ -316,6 +342,10 @@ function initProfile() {
         const email = $("#profile-email")?.value?.trim();
         if (email) payload.email = email;
 
+        // 🔥 AJOUT DE LA BIO À LA SAUVEGARDE 🔥
+        const bio = $("#profile-bio")?.value?.trim();
+        if (bio !== undefined) payload.bio = bio; // Accepte une bio vide pour pouvoir l'effacer
+
         const password = $("#profile-password")?.value;
         if (password) {
             payload.currentPassword = $("#profile-current-password")?.value || "";
@@ -416,7 +446,6 @@ function initResetPassword() {
         }
     });
 }
-
 
 initHome();
 initLogin();

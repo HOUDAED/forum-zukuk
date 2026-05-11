@@ -4,6 +4,31 @@ const fetchOpts = { credentials: 'include' };
 
 let searchTimer = null;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 🎨 SYSTÈME DE THÈME GLOBAL ZUKUK
+// ─────────────────────────────────────────────────────────────────────────────
+
+// 1. Anti-scintillement : Appliquer le thème local IMMÉDIATEMENT
+const savedTheme = localStorage.getItem('zukuk_theme') || 'light';
+document.body.setAttribute('data-theme', savedTheme);
+
+// 2. Synchronisation BDD : Vérifier le vrai thème de l'utilisateur au chargement
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const res = await fetch('http://localhost:8081/api/settings/', { credentials: 'include' });
+        if (res.ok) {
+            const settings = await res.json();
+            if (settings.theme && settings.theme !== savedTheme) {
+                // Si la BDD a un thème différent (ex: connexion sur un nouveau PC), on met à jour
+                document.body.setAttribute('data-theme', settings.theme);
+                localStorage.setItem('zukuk_theme', settings.theme);
+            }
+        }
+    } catch (e) {
+        // Utilisateur non connecté, on garde le thème local
+    }
+});
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   loadMembers();

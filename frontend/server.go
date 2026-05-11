@@ -68,6 +68,9 @@ func main() {
 	mux.HandleFunc("/forgot-password", page("forgot-password.html", ""))
 	mux.HandleFunc("/reset-password", page("reset-password.html", ""))
 	mux.HandleFunc("/network", page("network.html", "Réseau"))
+	
+	// 🔥 LA NOUVELLE ROUTE POUR LES PARAMÈTRES EST ICI 🔥
+	mux.HandleFunc("/settings", page("settings.html", "Paramètres"))
 
 	mux.HandleFunc("/post/", func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.URL.Path, "..") { http.NotFound(w, r); return }
