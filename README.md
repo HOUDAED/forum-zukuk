@@ -2,5 +2,3 @@
 
 ## forum-zukuk
 
-cle api = AIzaSyBMwlD_Sjr4-nd77WrR5eclnRRLJXpvlmg
-et dans lien d'appel mettre le code = "libraries=geometry"

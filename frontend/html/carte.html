@@ -1,159 +1,110 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MindSpace / Zukuk - Carte</title>
-    <link rel="stylesheet" href="/frontend/css/style.css">
-    <link rel="stylesheet" href="/frontend/css/maps.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Zukuk — Carte Ultra-Moderne</title>
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  
+  <link rel="stylesheet" href="/frontend/css/maps.css" />
 </head>
-<body class="map-page">
-    <div class="page-shell">
-        <aside class="sidebar">
-            <div class="sidebar-logo">
-                <span class="sidebar-logo-icon">💙</span>
-                <div>
-                    <div class="sidebar-brand">Zukuk</div>
-                    <div class="sidebar-name"></div>
-                </div>
-            </div>
-            <nav class="sidebar-nav">
-                <a href="/" class="nav-link">Accueil</a>
-                <a href="/" class="nav-link">Forum</a>
-                <a href="/carte" class="nav-link active">Carte</a>
-                <a href="/profile" class="nav-link">Profil</a>
-                <a href="#" class="nav-link">Paramètres</a>
-            </nav>
-        </aside>
-        <section class="map-page-main">
-            <div class="page-title-row">
-                <div>
-                    <h1>Carte des activités</h1>
-                    <p class="page-subtitle">Trouve des activités bien-être en France et ajoute les tiennes.</p>
-                </div>
-            </div>
-            <div class="content-grid">
-                <div class="filter-panel">
-                    <div class="panel-header">
-                        <div>
-                            <div class="panel-title">Filtres</div>
-                            <div class="panel-note">Recherche et mood</div>
-                        </div>
-                        <button class="close-filter" type="button" onclick="document.querySelector('.filter-panel').classList.toggle('collapsed')">×</button>
-                    </div>
-                    <div class="search-box">
-                        <input id="search-input" type="search" placeholder="Rechercher..." />
-                    </div>
-                    <div class="panel-section">
-                        <div class="section-label">Catégories</div>
-                        <div class="button-grid">
-                            <button type="button" class="category-button active" data-category="all">
-                                Toutes <span class="count" id="count-all">0</span>
-                            </button>
-                            <button type="button" class="category-button" data-category="sport">
-                                Activités sportives <span class="count" id="count-sport">0</span>
-                            </button>
-                            <button type="button" class="category-button" data-category="relax">
-                                Relaxation & bien-être <span class="count" id="count-relax">0</span>
-                            </button>
-                            <button type="button" class="category-button" data-category="talk">
-                                Groupes de parole <span class="count" id="count-talk">0</span>
-                            </button>
-                            <button type="button" class="category-button" data-category="creative">
-                                Activités créatives <span class="count" id="count-creative">0</span>
-                            </button>
-                            <button type="button" class="category-button" data-category="social">
-                                Lieux sociaux <span class="count" id="count-social">0</span>
-                            </button>
-                            <button type="button" class="category-button" data-category="nature">
-                                Activités nature <span class="count" id="count-nature">0</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="panel-section">
-                        <div class="section-label">Mood</div>
-                        <div class="button-grid">
-                            <button type="button" class="mood-button active" data-mood="all">Tous</button>
-                            <button type="button" class="mood-button" data-mood="relaxant">Relaxant</button>
-                            <button type="button" class="mood-button" data-mood="social">Social</button>
-                            <button type="button" class="mood-button" data-mood="actif">Actif</button>
-                            <button type="button" class="mood-button" data-mood="faible-énergie">Faible-énergie</button>
-                        </div>
-                    </div>
-                    <div class="panel-section">
-                        <div class="section-label">Ajouter une activité</div>
-                        <form id="activity-form">
-                            <label>Nom de l’activité <input type="text" id="activity-title" required></label>
-                            <label>Ville / adresse <input type="text" id="activity-city" required></label>
-                            <label>Catégorie
-                                <select id="activity-category" required>
-                                    <option value="">Choisir</option>
-                                    <option value="sport">Activités sportives</option>
-                                    <option value="relax">Relaxation & bien-être</option>
-                                    <option value="talk">Groupes de parole</option>
-                                    <option value="creative">Activités créatives</option>
-                                    <option value="social">Lieux sociaux</option>
-                                    <option value="nature">Activités nature</option>
-                                </select>
-                            </label>
-                            <label>Mood
-                                <select id="activity-mood" required>
-                                    <option value="">Choisir</option>
-                                    <option value="relaxant">Relaxant</option>
-                                    <option value="social">Social</option>
-                                    <option value="actif">Actif</option>
-                                    <option value="faible-énergie">Faible-énergie</option>
-                                </select>
-                            </label>
-                            <label>Description <textarea id="activity-description" rows="3"></textarea></label>
-                            <label>Latitude <input type="number" step="0.0001" id="activity-lat" required></label>
-                            <label>Longitude <input type="number" step="0.0001" id="activity-lng" required></label>
-                            <label>Places max <input type="number" id="activity-max-places" min="1" value="10" required></label>
-                            <label>Photo <input type="file" id="activity-photo" accept="image/*"></label>
-                            <div class="action-row">
-                                <button type="button" id="use-location-button">Utiliser ma position</button>
-                                <button type="submit" class="btn-primary">Ajouter dans la BD</button>
-                            </div>
-                        </form>
-                    </div>
-                    <p class="safety-note">
-                        Cette plateforme ne remplace pas un professionnel de santé. En cas d’urgence, contactez les services d’urgence.
-                    </p>
-                </div>
+<body>
+  {{ template "sidebar" . }}
 
-                <div class="map-holder">
-                    <div id="map" class="map-view"></div>
-                    <div id="place-card" class="place-card">
-                        <div class="place-card-header">
-                            <div class="place-icon">✦</div>
-                            <div>
-                                <div class="place-label" id="place-category">Activité</div>
-                                <h2 id="place-title">Sélectionne une activité sur la carte</h2>
-                            </div>
-                        </div>
-                        <div id="place-image" class="place-image" hidden></div>
-                        <p id="place-description">Clique sur un marqueur pour voir la fiche détaillée.</p>
-                        <div class="place-meta">
-                            <span id="place-city">France</span>
-                            <span id="place-address">Adresse inconnue</span>
-                            <span id="place-rating">★ 0.0</span>
-                            <span id="place-people">0 personnes</span>
-                        </div>
-                        <div class="place-actions">
-                            <a id="place-navigate" class="btn-secondary" target="_blank" rel="noreferrer">Se rendre</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </div>
+  <div id="app" class="split-layout">
+    <aside class="panel">
+      <header class="panel-header">
+        <h1>Carte des activités</h1>
+        <p class="muted">Design Spatial & Glassmorphism 2.0</p>
+      </header>
 
-    <!-- Google Maps API avec les bibliothèques nécessaires -->
-    <!-- À restreindre dans Google Cloud Console :
-         HTTP referrers: http://localhost:8080/*
-         API restrictions: Maps JavaScript API, Places API, Geometry Library -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=GOOGLE_MAPS_API_KEY&libraries=places,geometry,marker&callback=initMapPage" async defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/@googlemaps/markerclusterer@2.0.0/dist/index.min.js"></script>
-    <script src="/frontend/js/map.js"></script>
+      <section class="filters glass">
+        <label class="label">Recherche</label>
+        <input id="filter-text" type="search" placeholder="Filtrer les lieux..." />
+
+        <label class="label">Catégorie</label>
+        <select id="filter-category">
+          <option value="0">Toutes les catégories</option>
+          <option value="1">⚽ Sport</option>
+          <option value="2">🧘 Relaxation</option>
+          <option value="3">💬 Parole</option>
+          <option value="4">🎨 Créatif</option>
+          <option value="5">🤝 Social</option>
+          <option value="6">🌿 Nature</option>
+        </select>
+
+        <div class="divider"></div>
+
+        <h2>Proposer une activité</h2>
+        <form id="activity-form" class="form" autocomplete="off">
+          <input name="created_by" id="created_by" type="hidden" />
+          <input name="latitude" id="latitude" type="hidden" />
+          <input name="longitude" id="longitude" type="hidden" />
+          <input name="rating" id="rating" type="hidden" value="0" />
+
+          <label class="label">Titre de l'événement</label>
+          <input name="name" id="name" type="text" placeholder="Nom de l'activité" required />
+
+          <label class="label">Adresse (Lyon et alentours)</label>
+          <input name="address" id="address" type="text" placeholder="Saisissez l'adresse..." required />
+
+          <label class="label">Date et Heure</label>
+          <div class="datetime-wrapper">
+            <input name="schedule" id="schedule" type="text" placeholder="Sélectionnez une date..." required />
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px;">
+            <div>
+              <label class="label">Catégorie</label>
+              <select name="category_id" id="category_id" required>
+                <option value="1">Sport</option>
+                <option value="2">Relaxation</option>
+                <option value="3">Parole</option>
+                <option value="4">Créatif</option>
+                <option value="5">Social</option>
+                <option value="6">Nature</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">Places max</label>
+              <input name="max_places" id="max_places" type="number" value="10" min="1" required />
+            </div>
+          </div>
+
+         <label class="label">Description</label>
+          <textarea name="description" id="description" rows="3" placeholder="Décrivez l'activité..."></textarea>
+
+          <div class="form-actions">
+            <button id="create-activity" type="submit" class="btn primary">Publier l'activité</button>
+            <button id="reset-form" type="button" class="btn ghost">Effacer</button>
+          </div>
+          
+          <div id="form-msg" class="form-msg"></div>
+        </form>
+      </section>
+    </aside>
+
+    <main class="map-container">
+      <div id="map"></div>
+      <aside id="place-card" class="place-card">
+        <button id="close-card" class="close">✕</button>
+        <h3 id="pc-title">Titre</h3>
+        <p id="pc-address" class="muted">Adresse</p>
+        <p id="pc-description">Description</p>
+        <p id="pc-schedule" class="muted">Horaires</p>
+        <p id="pc-participants" class="muted">Inscrits</p>
+        <div class="card-actions">
+          <button id="join-btn" class="btn primary">S'inscrire</button>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://npmcdn.com/flatpickr/dist/l10n/fr.js"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBMwlD_Sjr4-nd77WrR5eclnRRLJXpvlmg&libraries=places,marker&region=FR&language=fr" async defer></script>
+  <script src="https://unpkg.com/@googlemaps/markerclustererplus/dist/index.min.js"></script>
+  <script src="/frontend/js/map.js"></script>
 </body>
 </html>
