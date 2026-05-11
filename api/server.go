@@ -75,6 +75,9 @@ func main() {
 	// Rétrocompatibilité board.js v1
 	api.GET("/discussion/:id", handlers.GetDiscussionByID)
 
+	// 📍 CARTE : Lecture publique des activités (gin.WrapF adapte la fonction standard pour Gin)
+	api.GET("/activities", gin.WrapF(handlers.GetActivitiesHandler))
+
 	// ── Endpoints protégés ───────────────────────────────────────────────────
 	protected := api.Group("/")
 	protected.Use(middleware.RequireAuth())
@@ -91,8 +94,7 @@ func main() {
 		// ── Humeur ─────────────────────────────────────────────────────────
 		protected.POST("/mood", handlers.UpdateMood)               // enregistre + persiste
 		protected.GET("/me/mood-history", handlers.GetMoodHistory) // 30 derniers jours
-		protected.GET("/me/mood-stats", handlers.GetMoodStats)
-		// répartition 30 jours
+		protected.GET("/me/mood-stats", handlers.GetMoodStats)     // répartition 30 jours
 
 		// ── Posts CRUD ─────────────────────────────────────────────────────
 		protected.POST("/posts", handlers.CreatePost)
@@ -116,15 +118,19 @@ func main() {
 		protected.POST("/discussion/:id/like", handlers.LikeDiscussion)
 		protected.GET("/me/dashboard-stats", handlers.GetUserDashboardStats)
 
+		// 📍 CARTE : Création et Inscription (Protégé par l'authentification Gin)
+		protected.POST("/activities", gin.WrapF(handlers.CreateActivityHandler))
+		protected.POST("/activities/:id/join", gin.WrapF(handlers.ToggleJoinHandler))
+
 		// ── Paramètres Zukuk ───────────────────────────────────────────────
 		settings := protected.Group("/settings")
 		{
-			settings.GET("/", handlers.GetSettings)                       // Récupérer les préférences
-			settings.PUT("/", handlers.UpdateSettings)                    // Sauvegarder les préférences
-			settings.GET("/sessions", handlers.GetSessions)               // Voir les connexions actives
+			settings.GET("/", handlers.GetSettings)                   // Récupérer les préférences
+			settings.PUT("/", handlers.UpdateSettings)                // Sauvegarder les préférences
+			settings.GET("/sessions", handlers.GetSessions)           // Voir les connexions actives
 			settings.POST("/sessions/revoke", handlers.RevokeAllSessions) // Déconnecter les autres
-			settings.GET("/export", handlers.ExportMyData)                // Téléchargement RGPD
-			settings.POST("/pause", handlers.PauseAccount)                // Alias pour la Digital Detox
+			settings.GET("/export", handlers.ExportMyData)            // Téléchargement RGPD
+			settings.POST("/pause", handlers.PauseAccount)            // Alias pour la Digital Detox
 		}
 	}
 

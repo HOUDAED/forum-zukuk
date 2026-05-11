@@ -21,19 +21,20 @@ func main() {
 		}
 	}
 
+	// Fichiers statiques (Déjà parfaitement gérés par ton HEAD)
 	mux.Handle("/frontend/css/", http.StripPrefix("/frontend/css/", http.FileServer(http.Dir(filepath.Join(baseDir, "css")))))
 	mux.Handle("/frontend/js/", http.StripPrefix("/frontend/js/", http.FileServer(http.Dir(filepath.Join(baseDir, "js")))))
 
 	// 2. Pré-chargement ULTRA STRICT des templates
 	t := template.New("Zukuk")
 
-	// 🔴 ON EXIGE LES PARTIALS (Arrêt immédiat si introuvables)
+	// 🔴 ON EXIGE LES PARTIALS
 	partialsPath := filepath.Join(baseDir, "html", "partials", "*.html")
 	if _, err := t.ParseGlob(partialsPath); err != nil {
-		log.Fatalf("\n🚨 ERREUR FATALE (DÉMARRAGE STOPPÉ) 🚨\nJe ne trouve aucun fichier dans : %s\n👉 Vérifie que le dossier 'partials' existe bien.\n👉 As-tu bien SAUVEGARDÉ tes fichiers dedans ?\nErreur technique : %v\n\n", partialsPath, err)
+		log.Fatalf("\n🚨 ERREUR FATALE (DÉMARRAGE STOPPÉ) 🚨\nJe ne trouve aucun fichier dans : %s\n👉 Vérifie que le dossier 'partials' existe bien.\nErreur technique : %v\n\n", partialsPath, err)
 	}
 
-	// 🔴 ON EXIGE LES PAGES
+	// 🔴 ON EXIGE LES PAGES (carte.html sera chargée automatiquement ici !)
 	pagesPath := filepath.Join(baseDir, "html", "*.html")
 	if _, err := t.ParseGlob(pagesPath); err != nil {
 		log.Fatalf("\n🚨 ERREUR FATALE (DÉMARRAGE STOPPÉ) 🚨\nJe ne trouve aucune page HTML dans : %s\nErreur technique : %v\n\n", pagesPath, err)
@@ -68,9 +69,10 @@ func main() {
 	mux.HandleFunc("/forgot-password", page("forgot-password.html", ""))
 	mux.HandleFunc("/reset-password", page("reset-password.html", ""))
 	mux.HandleFunc("/network", page("network.html", "Réseau"))
-	
-	// 🔥 LA NOUVELLE ROUTE POUR LES PARAMÈTRES EST ICI 🔥
 	mux.HandleFunc("/settings", page("settings.html", "Paramètres"))
+
+	// 📍 LA NOUVELLE ROUTE DE LA CARTE EST INTÉGRÉE ICI 📍
+	mux.HandleFunc("/carte", page("carte.html", "Carte"))
 
 	mux.HandleFunc("/post/", func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.URL.Path, "..") { http.NotFound(w, r); return }

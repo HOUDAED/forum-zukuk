@@ -1,0 +1,261 @@
+/* ==========================================================================
+   🎨 VARIABLES SPÉCIFIQUES À LA CARTE (S'adapte au Light/Dark Mode)
+   ========================================================================== */
+:root {
+    --map-glass-bg: rgba(255, 255, 255, 0.65);
+    --map-glass-border: rgba(255, 255, 255, 0.8);
+    --map-input-bg: rgba(255, 255, 255, 0.9);
+    --map-input-border: rgba(226, 232, 240, 0.8);
+    --map-shadow: 0 8px 32px rgba(0, 0, 0, 0.04);
+    --map-text-main: #1e293b;
+    --map-text-muted: #64748b;
+    --map-highlight: #818cf8;
+}
+
+[data-theme="dark"] {
+    --map-glass-bg: rgba(30, 41, 59, 0.7);
+    --map-glass-border: rgba(255, 255, 255, 0.1);
+    --map-input-bg: rgba(15, 23, 42, 0.6);
+    --map-input-border: rgba(255, 255, 255, 0.15);
+    --map-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --map-text-main: #f8fafc;
+    --map-text-muted: #94a3b8;
+}
+
+/* ==========================================================================
+   🏗️ LAYOUT GLOBAL
+   ========================================================================== */
+.split-layout {
+    display: flex;
+    gap: 24px;
+    /* Prend toute la hauteur dispo sous le header, minimum 550px */
+    height: calc(100vh - 180px);
+    min-height: 550px;
+    width: 100%;
+    animation: fadeScaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeScaleIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.99); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ==========================================================================
+   🎛️ PANNEAU GAUCHE (Formulaire Glassmorphism)
+   ========================================================================== */
+/* On force l'écrasement de .bento-card pour garantir la transparence */
+.split-layout .panel.bento-card {
+    width: 380px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 28px !important;
+    
+    /* Effet Verre Dépoli Ultra-Moderne */
+    background: var(--map-glass-bg) !important;
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid var(--map-glass-border) !important;
+    border-radius: 28px !important;
+    box-shadow: var(--map-shadow) !important;
+    
+    overflow-y: auto;
+}
+
+/* Scrollbar invisible et moderne pour le panneau */
+.panel::-webkit-scrollbar { width: 5px; }
+.panel::-webkit-scrollbar-thumb { background: rgba(129, 140, 248, 0.3); border-radius: 10px; }
+.panel::-webkit-scrollbar-track { background: transparent; }
+
+/* ==========================================================================
+   📝 INPUTS DU FORMULAIRE
+   ========================================================================== */
+.split-layout .label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--map-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+    margin-left: 4px;
+}
+
+.split-layout .modern-input {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--map-input-bg) !important;
+    border: 1.5px solid var(--map-input-border) !important;
+    color: var(--map-text-main) !important;
+    border-radius: 16px;
+    font-size: 0.95rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.split-layout .modern-input:focus {
+    background: transparent !important;
+    border-color: var(--map-highlight) !important;
+    box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.15) !important;
+    transform: translateY(-2px);
+}
+
+/* Bouton Publier */
+#create-activity {
+    margin-top: 12px;
+    padding: 16px;
+    border-radius: 16px;
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+    background: linear-gradient(135deg, #818cf8, #a78bfa);
+    box-shadow: 0 8px 20px rgba(129, 140, 248, 0.3);
+    transition: all 0.3s ease;
+}
+#create-activity:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 25px rgba(129, 140, 248, 0.4);
+}
+
+/* ==========================================================================
+   🗺️ ZONE GOOGLE MAPS
+   ========================================================================== */
+.map-container {
+    flex: 1;
+    position: relative;
+    border-radius: 28px;
+    overflow: hidden;
+    border: 1px solid var(--map-glass-border);
+    box-shadow: var(--map-shadow);
+    background: var(--map-glass-bg);
+}
+
+#map { width: 100%; height: 100%; }
+
+/* ==========================================================================
+   🎟️ FICHE DÉTAIL DU LIEU (Widget Flottant style VisionOS)
+   ========================================================================== */
+.place-card {
+    position: absolute;
+    bottom: 24px;
+    left: 24px;
+    width: min(400px, calc(100% - 48px));
+    
+    background: var(--map-glass-bg);
+    backdrop-filter: blur(25px) saturate(200%);
+    -webkit-backdrop-filter: blur(25px) saturate(200%);
+    border: 1px solid var(--map-glass-border);
+    border-radius: 24px;
+    padding: 24px;
+    
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    z-index: 100;
+    
+    /* Animation d'apparition par le bas */
+    transform: translateY(150%) scale(0.95);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.5s cubic-bezier(0.2, 0.9, 0.2, 1), opacity 0.4s ease;
+}
+
+.place-card.visible {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.close-card-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--map-input-border);
+    background: var(--map-input-bg);
+    color: var(--map-text-muted);
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.close-card-btn:hover {
+    background: #ef4444;
+    color: white;
+    border-color: #ef4444;
+    transform: rotate(90deg);
+}
+
+#pc-title { font-size: 1.4rem; font-weight: 800; color: var(--map-text-main); margin: 0 0 8px 0; padding-right: 30px; }
+#pc-address { font-size: 0.9rem; font-weight: 500; color: var(--map-text-muted); margin: 0 0 12px 0; }
+#pc-description { font-size: 0.95rem; line-height: 1.5; color: var(--map-text-main); margin: 0 0 16px 0; }
+#pc-schedule { font-size: 0.95rem; font-weight: 700; color: var(--map-highlight); margin: 0 0 20px 0; }
+
+#join-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 14px;
+    font-weight: 700;
+}
+
+/* ==========================================================================
+   📅 CUSTOMISATION FLATPICKR (Calendrier)
+   ========================================================================== */
+.flatpickr-calendar {
+    background: var(--map-glass-bg) !important;
+    backdrop-filter: blur(16px) !important;
+    border: 1px solid var(--map-glass-border) !important;
+    box-shadow: var(--map-shadow) !important;
+    border-radius: 20px !important;
+    padding: 10px !important;
+    font-family: inherit !important;
+}
+
+.flatpickr-day {
+    color: var(--map-text-main) !important;
+    border-radius: 10px !important;
+}
+
+.flatpickr-day:hover { background: rgba(129, 140, 248, 0.2) !important; }
+.flatpickr-day.selected {
+    background: var(--map-highlight) !important;
+    border-color: var(--map-highlight) !important;
+    color: white !important;
+    font-weight: bold;
+}
+
+.flatpickr-months .flatpickr-month,
+.flatpickr-current-month .flatpickr-monthDropdown-months,
+.flatpickr-weekday {
+    color: var(--map-text-main) !important;
+    fill: var(--map-text-main) !important;
+}
+
+.flatpickr-time { border-top: 1px solid var(--map-glass-border) !important; }
+.flatpickr-time input { color: var(--map-text-main) !important; }
+
+/* ==========================================================================
+   📱 RESPONSIVE MOBILE & TABLETTE
+   ========================================================================== */
+@media (max-width: 1024px) {
+    .split-layout {
+        flex-direction: column;
+        height: auto;
+        min-height: auto;
+    }
+    
+    .split-layout .panel.bento-card {
+        width: 100%;
+        order: 2; /* Le formulaire passe sous la carte sur mobile */
+    }
+    
+    .map-container {
+        height: 450px;
+        order: 1;
+        flex: none;
+    }
+    
+    .place-card { width: calc(100% - 32px); left: 16px; bottom: 16px; }
+}

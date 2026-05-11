@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zukuk - Carte des activités</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="/frontend/css/board.css">
+    <link rel="stylesheet" href="/frontend/css/maps.css">
+</head>
+<body>
+    <div class="app-container">
+        
+        {{ template "sidebar" . }}
+
+        <main class="main-content">
+            <div class="background-gradient" aria-hidden="true"></div>
+
+            <div class="content-wrapper">
+                <header class="header" style="margin-bottom: 24px;">
+                    <div>
+                        <h1 class="header-title">Carte des activités 📍</h1>
+                        <p class="header-subtitle">Découvre et propose des événements près de chez toi</p>
+                    </div>
+                </header>
+
+                <div class="split-layout">
+                    
+                    <aside class="panel bento-card">
+                        <div class="section-header" style="margin-bottom: 16px;">
+                            <div class="section-indicator" style="background:#818cf8"></div>
+                            <h2>Proposer une activité</h2>
+                        </div>
+
+                        <form id="activity-form" class="form" autocomplete="off" style="display: flex; flex-direction: column; gap: 12px;">
+                            <input name="created_by" id="created_by" type="hidden" />
+                            <input name="latitude" id="latitude" type="hidden" />
+                            <input name="longitude" id="longitude" type="hidden" />
+
+                            <div>
+                                <label class="label">Titre</label>
+                                <input name="name" id="name" class="modern-input" type="text" placeholder="Nom de l'activité" required />
+                            </div>
+
+                            <div>
+                                <label class="label">Adresse</label>
+                                <input name="address" id="address" class="modern-input" type="text" placeholder="Saisissez l'adresse..." required />
+                            </div>
+
+                            <div>
+                                <label class="label">Date et Heure</label>
+                                <input name="schedule" id="schedule" class="modern-input" type="text" placeholder="Sélectionnez..." required />
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                <div>
+                                    <label class="label">Catégorie</label>
+                                    <select name="category_id" id="category_id" class="modern-input" required>
+                                        <option value="1">⚽ Sport</option>
+                                        <option value="2">🧘 Relaxation</option>
+                                        <option value="3">💬 Parole</option>
+                                        <option value="4">🎨 Créatif</option>
+                                        <option value="6">🌿 Nature</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="label">Places</label>
+                                    <input name="max_places" id="max_places" class="modern-input" type="number" value="10" min="1" required />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="label">Description</label>
+                                <textarea name="description" id="description" class="modern-input" rows="2" placeholder="Un petit mot..."></textarea>
+                            </div>
+
+                            <button id="create-activity" type="submit" class="btn-primary" style="margin-top: 8px; width: 100%; border: none;">Publier</button>
+                        </form>
+                    </aside>
+
+                    <div class="map-container bento-card" style="padding: 0;">
+                        <div id="map"></div>
+                        
+                        <div id="place-card" class="place-card">
+                            <button id="close-card" class="close-card-btn">✕</button>
+                            <h3 id="pc-title">Titre</h3>
+                            <p id="pc-address" style="color: var(--map-text-muted); font-size: 0.9rem; margin-bottom: 8px;">Adresse</p>
+                            <p id="pc-description" style="margin-bottom: 12px;">Description</p>
+                            <p id="pc-schedule" style="color: #818cf8; font-weight: 600; margin-bottom: 16px;">Horaires</p>
+                            <button id="join-btn" class="btn-primary" style="width: 100%; border: none;">S'inscrire</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/fr.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBMwlD_Sjr4-nd77WrR5eclnRRLJXpvlmg&libraries=places,marker&region=FR&language=fr"></script>
+    <script src="/frontend/js/map.js"></script>
+</body>
+</html>
