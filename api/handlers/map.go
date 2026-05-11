@@ -146,3 +146,88 @@ func getCurrentUserID(r *http.Request) int64 {
 	}
 	return 0 // Non connecté
 }
+// Participant définit la structure des données renvoyées pour chaque inscrit
+type Participant struct {
+	Pseudo    string `json:"pseudo"`
+	AvatarURL string `json:"avatar_url"`
+}
+
+// GetActivityParticipantsHandler permet au créateur de voir ses inscrits
+func GetActivityParticipantsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	
+	// 1. Récupérer l'ID de l'utilisateur qui fait la requête
+	userID := getCurrentUserID(r)
+	if userID == 0 {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Connexion requise"})
+		return
+	}
+
+	// 2. Récupérer l'ID de l'activité depuis l'URL
+	vars := mux.Vars(r)
+	actID, _ := strconv.ParseInt(vars["id"], 10, 64)
+
+	// 3. VÉRIFICATION DE SÉCURITÉ : Est-ce le créateur ?
+	var creatorID int64
+	err := database.ZUKUKDB.QueryRow("SELECT created_by FROM activities WHERE id = ?", actID).Scan(&creatorID)
+	
+	if err != nil || creatorID != userID {
+		// On renvoie une erreur 403 (Interdit) si ce n'est pas son activité
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Seul l'organisateur peut voir la liste."})
+		return
+	}
+
+	// 4. Si c'est le bon créateur, on récupère les participants
+	query := `
+		SELECT u.pseudo, u.avatar_url 
+		FROM users u
+		JOIN activity_participants ap ON u.id = ap.user_id
+		WHERE ap.activity_id = ?
+		ORDER BY ap.joined_at ASC`
+
+	rows, err := database.ZUKUKDB.Query(query, actID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var list []Participant
+	for rows.Next() {
+		var p Participant
+		rows.Scan(&p.Pseudo, &p.AvatarURL)
+		list = append(list, p)
+	}
+    
+	if list == nil { list = []Participant{} }
+	json.NewEncoder(w).Encode(list)
+}
+
+// DeleteActivityHandler permet au créateur d'annuler son activité
+func DeleteActivityHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	userID := getCurrentUserID(r)
+	if userID == 0 {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	vars := mux.Vars(r)
+	actID, _ := strconv.ParseInt(vars["id"], 10, 64)
+
+	// Sécurité : On vérifie que c'est bien son activité
+	var creatorID int64
+	err := database.ZUKUKDB.QueryRow("SELECT created_by FROM activities WHERE id = ?", actID).Scan(&creatorID)
+	if err != nil || creatorID != userID {
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Non autorisé."})
+		return
+	}
+
+	// Suppression définitive
+	database.ZUKUKDB.Exec("DELETE FROM activities WHERE id = ?", actID)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Supprimée"})
+}

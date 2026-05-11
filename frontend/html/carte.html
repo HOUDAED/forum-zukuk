@@ -37,6 +37,7 @@
                             <input name="created_by" id="created_by" type="hidden" />
                             <input name="latitude" id="latitude" type="hidden" />
                             <input name="longitude" id="longitude" type="hidden" />
+                            <div id="form-msg" style="display: none;"></div>
 
                             <div>
                                 <label class="label">Titre</label>
@@ -82,14 +83,22 @@
                     <div class="map-container bento-card" style="padding: 0;">
                         <div id="map"></div>
                         
-                        <div id="place-card" class="place-card">
+                        <aside id="place-card" class="place-card">
                             <button id="close-card" class="close-card-btn">✕</button>
                             <h3 id="pc-title">Titre</h3>
                             <p id="pc-address" style="color: var(--map-text-muted); font-size: 0.9rem; margin-bottom: 8px;">Adresse</p>
                             <p id="pc-description" style="margin-bottom: 12px;">Description</p>
                             <p id="pc-schedule" style="color: #818cf8; font-weight: 600; margin-bottom: 16px;">Horaires</p>
-                            <button id="join-btn" class="btn-primary" style="width: 100%; border: none;">S'inscrire</button>
-                        </div>
+                            <p id="pc-participants" style="font-weight: 700; margin-bottom: 8px;">Inscrits</p>
+                            
+                            <div id="pc-participants-list" style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; min-height: 32px;"></div>
+
+                            <div style="display: flex; gap: 10px;">
+                                <button id="join-btn" class="btn-primary" style="flex: 1; border: none;">S'inscrire</button>
+                                
+                                <button id="delete-act-btn" style="display: none; background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; padding: 12px; border-radius: 12px; cursor: pointer; font-weight: bold;" title="Annuler l'activité">🗑️</button>
+                            </div>
+                        </aside>
                     </div>
 
                 </div>
