@@ -1,16 +1,14 @@
-<<<<<<< HEAD
+
 *.db
 *.db-shm
 *.db-wal
 
 uploads/
-=======
 database/*.db
 database/*.db-shm
 database/*.db-wal
 
 database/uploads/
->>>>>>> kerem-carte
 
 .env
 .env.local
@@ -34,12 +32,9 @@ desktop.ini
 *~
 
 *.log
-<<<<<<< HEAD
-logs/
-=======
+
 logs/
 .env.local
 .env.production
 .env.development
 .env.test       
->>>>>>> kerem-carte
