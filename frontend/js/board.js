@@ -1,4 +1,4 @@
-// Board JavaScript - Frontend Logic (v2 – posts réels + recherche + mode invité)
+// Board JavaScript - Frontend Logic (v2 – posts réels + recherche + mode invité + PAGINATION)
 const API_BASE = 'http://localhost:8081/api';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (res.ok) {
             const settings = await res.json();
             if (settings.theme && settings.theme !== savedTheme) {
-                // Si la BDD a un thème différent (ex: connexion sur un nouveau PC), on met à jour
                 document.body.setAttribute('data-theme', settings.theme);
                 localStorage.setItem('zukuk_theme', settings.theme);
             }
@@ -40,9 +39,13 @@ const orderSelect    = document.getElementById('boardOrder');
 const newPostBtn     = document.getElementById('newPostBtn');
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let currentMood  = 'Calme';
-let currentUser  = null;   // null = non connecté
-let searchTimer  = null;
+let currentMood   = 'Calme';
+let currentUser   = null;   // null = non connecté
+let searchTimer   = null;
+
+// 🔥 NOUVEAU : État pour la pagination
+let currentOffset = 0; 
+const POSTS_PER_PAGE = 20;
 
 const fetchOpts = { credentials: 'include' };
 
@@ -52,7 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateGreeting();
   renderMoodsLocal();
   await loadCurrentMood();    // affichage immédiat
-  loadPosts();
+  loadPosts(false);           // 🔥 false = on charge depuis le début (pas de append)
   renderStatsLocal();
   fetchRandomQuote();
   setupEventListeners();
@@ -71,7 +74,6 @@ async function checkAuth() {
 
 function updateUIForAuthState() {
   if (!currentUser) {
-    // Désactiver le bouton "Nouveau post"
     if (newPostBtn) {
       newPostBtn.disabled = true;
       newPostBtn.title    = 'Connectez-vous pour publier';
@@ -81,24 +83,38 @@ function updateUIForAuthState() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// LOAD POSTS
+// LOAD POSTS (Avec Pagination)
 // ─────────────────────────────────────────────────────────────────────────────
-async function loadPosts() {
+async function loadPosts(append = false) {
+  // Si on lance une nouvelle recherche ou un nouveau tri, on recommence de zéro
+  if (!append) {
+      currentOffset = 0;
+      if (discussionsList) {
+          discussionsList.innerHTML = '<p style="text-align:center; color:var(--text-gray); padding:24px;">Chargement des discussions...</p>';
+      }
+  }
+
   const query = searchInput  ? searchInput.value.trim()   : '';
   const sort  = sortSelect   ? sortSelect.value            : 'date';
   const order = orderSelect  ? orderSelect.value           : 'desc';
 
-  const params = new URLSearchParams({ sort, order, limit: 10 });
+  // Intégration de LIMIT et OFFSET
+  const params = new URLSearchParams({ 
+      sort, 
+      order, 
+      limit: POSTS_PER_PAGE, 
+      offset: currentOffset 
+  });
   if (query) params.set('query', query);
 
   try {
     const res = await fetch(`${API_BASE}/posts?${params}`, fetchOpts);
     if (!res.ok) throw new Error('API error');
     const data = await res.json();
-    renderPosts(data.posts || []);
+    renderPosts(data.posts || [], append);
   } catch (err) {
     console.error('Erreur chargement posts:', err);
-    renderPostsLocal();
+    if (!append) renderPostsLocal();
   }
 }
 
@@ -121,16 +137,30 @@ function timeAgo(dateStr) {
   return `${Math.floor(diff/86400)}j`;
 }
 
-function renderPosts(posts) {
-  discussionsList.innerHTML = '';
-  if (posts.length === 0) {
+function renderPosts(posts, append = false) {
+  const loadMoreBtn = document.getElementById('btn-load-more');
+
+  // Si on ne "charge pas plus", on vide la liste
+  if (!append) {
+      discussionsList.innerHTML = '';
+  }
+
+  // Cas où il n'y a absolument rien (base vide ou recherche sans résultat)
+  if (posts.length === 0 && currentOffset === 0) {
     discussionsList.innerHTML = '<p style="color:var(--text-gray);text-align:center;padding:24px">Aucun post trouvé.</p>';
+    if (loadMoreBtn) loadMoreBtn.style.display = 'none';
     return;
   }
+
   posts.forEach(post => {
     const card = document.createElement('div');
     card.className = 'discussion-card';
     card.dataset.postId = post.id;
+
+    // Petite animation individuelle
+    card.style.opacity   = '0';
+    card.style.transform = 'translateY(10px)';
+    card.style.transition = `opacity .4s ease, transform .4s ease`;
 
     const isOwner = currentUser && currentUser.id === post.user_id;
     const ownerActions = isOwner ? `
@@ -214,15 +244,22 @@ function renderPosts(posts) {
     }
 
     discussionsList.appendChild(card);
+    
+    // Déclencheur d'animation fluide
+    requestAnimationFrame(() => { 
+        card.style.opacity = '1'; 
+        card.style.transform = 'translateY(0)'; 
+    });
   });
 
-  // Animate in
-  discussionsList.querySelectorAll('.discussion-card').forEach((c, i) => {
-    c.style.opacity   = '0';
-    c.style.transform = 'translateY(10px)';
-    c.style.transition = `opacity .3s ${i*50}ms ease, transform .3s ${i*50}ms ease`;
-    requestAnimationFrame(() => { c.style.opacity = '1'; c.style.transform = 'translateY(0)'; });
-  });
+  // 🔥 GESTION DU BOUTON "CHARGER PLUS"
+  if (loadMoreBtn) {
+      if (posts.length < POSTS_PER_PAGE) {
+          loadMoreBtn.style.display = 'none'; // Plus rien à charger
+      } else {
+          loadMoreBtn.style.display = 'inline-block'; // On affiche
+      }
+  }
 }
 
 function renderPostsLocal() {
@@ -231,7 +268,7 @@ function renderPostsLocal() {
     { id:2, author:'Thomas_zen', created_at: new Date(Date.now()-18000000).toISOString(), title:"Techniques de respiration qui m'ont aidé", content:"Je voulais partager quelques exercices simples qui ont vraiment changé ma façon de gérer l'anxiété.", category:'Bien-être', likes_count:24, comments_count:15, user_id:-1, avatar_url:'' },
     { id:3, author:'Sophie_22', created_at: new Date(Date.now()-86400000).toISOString(), title:"Se sentir seul à l'université", content:"La première année est vraiment difficile. Est-ce que d'autres ont ressenti la même chose ?", category:'Solitude', likes_count:18, comments_count:22, user_id:-1, avatar_url:'' },
   ];
-  renderPosts(mock);
+  renderPosts(mock, false);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -314,7 +351,7 @@ function openEditPostModal(post) {
         const data = await res.json();
         if (!res.ok) { alert(data.error); return false; }
         closeModal();
-        loadPosts();
+        loadPosts(false); // On recharge la liste sans "append" après modif
       }
     );
   });
@@ -468,17 +505,26 @@ function setupEventListeners() {
   // New post button
   if (newPostBtn) newPostBtn.addEventListener('click', openNewPostModal);
 
-  // Search input (debounced)
+  // Search input (debounced) - Réinitialise la pagination
   if (searchInput) {
     searchInput.addEventListener('input', () => {
       clearTimeout(searchTimer);
-      searchTimer = setTimeout(loadPosts, 350);
+      searchTimer = setTimeout(() => loadPosts(false), 350); 
     });
   }
 
-  // Sort / Order selects
-  if (sortSelect)  sortSelect.addEventListener('change', loadPosts);
-  if (orderSelect) orderSelect.addEventListener('change', loadPosts);
+  // Sort / Order selects - Réinitialisent la pagination
+  if (sortSelect)  sortSelect.addEventListener('change', () => loadPosts(false));
+  if (orderSelect) orderSelect.addEventListener('change', () => loadPosts(false));
+
+  // 🔥 NOUVEAU : Écouteur pour le bouton "Charger plus"
+  const loadMoreBtn = document.getElementById('btn-load-more');
+  if (loadMoreBtn) {
+      loadMoreBtn.addEventListener('click', () => {
+          currentOffset += POSTS_PER_PAGE;
+          loadPosts(true); // true = on rajoute à la suite
+      });
+  }
 
   // Modal backdrop click to close
   document.addEventListener('click', e => {
