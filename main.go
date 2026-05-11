@@ -56,8 +56,15 @@ func main() {
 		protected.POST("/me/avatar", handlers.UploadAvatar)
 	}
 
+	api.GET("/activities", handlers.GetActivities)
+	api.POST("/activities", handlers.CreateActivity)
+
 	router.Static("/uploads", filepath.Join(".", "database", "uploads"))
 	router.Static("/frontend", filepath.Join(".", "frontend"))
+
+	router.GET("/carte", func(c *gin.Context) {
+		c.File(filepath.Join(".", "frontend", "html", "carte.html"))
+	})
 
 	router.GET("/", func(c *gin.Context) {
 		c.File(filepath.Join(".", "frontend", "html", "index.html"))

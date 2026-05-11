@@ -26,6 +26,8 @@ func Init() {
 
 	createTables()
 	seedCategories()
+	migrateActivitiesTable()
+	seedActivities()
 	startCleaner()
 
 	log.Println("Base de données initialisée avec succès")
@@ -210,6 +212,118 @@ func seedCategories() {
 	log.Println("Catégories initialisées")
 }
 
+func migrateActivitiesTable() {
+	rows, err := ZUKUKDB.Query(`PRAGMA table_info(activities)`)
+	if err != nil {
+		log.Println("Erreur migration activities:", err)
+		return
+	}
+	defer rows.Close()
+
+	existing := map[string]bool{}
+	for rows.Next() {
+		var cid int
+		var name, ctype string
+		var notnull, pk int
+		var dflt sql.NullString
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+			continue
+		}
+		existing[name] = true
+	}
+
+	if !existing["mood"] {
+		if _, err := ZUKUKDB.Exec(`ALTER TABLE activities ADD COLUMN mood TEXT NOT NULL DEFAULT 'relaxant'`); err != nil {
+			log.Println("Erreur ajout colonne mood:", err)
+		}
+	}
+	if !existing["photo"] {
+		if _, err := ZUKUKDB.Exec(`ALTER TABLE activities ADD COLUMN photo TEXT NOT NULL DEFAULT ''`); err != nil {
+			log.Println("Erreur ajout colonne photo:", err)
+		}
+	}
+}
+
+func seedActivities() {
+	var count int
+	if err := ZUKUKDB.QueryRow(`SELECT COUNT(*) FROM activities`).Scan(&count); err != nil {
+		return
+	}
+	if count > 0 {
+		return
+	}
+
+	type activitySeed struct {
+		Name      string
+		Category  string
+		Mood      string
+		Desc      string
+		Address   string
+		Lat       float64
+		Lng       float64
+		MaxPlaces int
+	}
+
+	seeds := []activitySeed{
+		{"Cours de yoga en plein air", "Relaxation & bien-être", "relaxant", "Séance de yoga douce au parc, accessible à tous.", "Jardin du Luxembourg, Paris", 48.8462, 2.3372, 15},
+		{"Atelier peinture", "Activités créatives", "relaxant", "Peinture en groupe avec matériel fourni.", "Vieux Port, Marseille", 43.2965, 5.3698, 12},
+		{"Randonnée en forêt", "Activités nature", "actif", "Balade guidée dans la forêt de Fontainebleau.", "Forêt de Fontainebleau, France", 48.4000, 2.7000, 18},
+		{"Cercle de parole bien-être", "Groupes de parole", "social", "Échange bienveillant autour du stress et de l'anxiété.", "Lyon 2e, Lyon", 45.7485, 4.8320, 20},
+		{"Course collective", "Activités sportives", "actif", "Jogging en groupe le long du canal.", "Île de Nantes, Nantes", 47.2114, -1.5536, 14},
+		{"Pause café zen", "Lieux sociaux", "social", "Rencontre chaleureuse pour parler de bien-être.", "Vieux Lille, Lille", 50.6373, 3.0635, 10},
+		{"Atelier création musicale", "Activités créatives", "social", "Session de musique collective et partage d'idées.", "Le Suquet, Cannes", 43.5528, 7.0174, 12},
+		{"Randonnée côtière", "Activités nature", "actif", "Marche face à la mer pour se ressourcer.", "Calanques, Marseille", 43.2120, 5.4387, 16},
+		{"Séance méditation", "Relaxation & bien-être", "relaxant", "Méditation guidée dans un lieu calme.", "Parc de la Tête d'Or, Lyon", 45.7772, 4.8525, 18},
+		{"Atelier photo urbaine", "Activités créatives", "faible-énergie", "Découverte de la photographie de rue.", "Quartier historique, Strasbourg", 48.5839, 7.7455, 12},
+		{"Sortie vélo découverte", "Activités sportives", "actif", "Balade cycliste sur des pistes sécurisées.", "Bassin de la Villette, Paris", 48.8920, 2.3786, 14},
+		{"Café discussion bien-être", "Lieux sociaux", "social", "Rencontre conviviale pour partager ses ressources.", "Place du Capitole, Toulouse", 43.6045, 1.4440, 18},
+		{"Atelier écriture créative", "Activités créatives", "relaxant", "Écriture libre pour libérer ses émotions.", "Quartier Latin, Paris", 48.8497, 2.3449, 12},
+		{"Randonnée nature", "Activités nature", "actif", "Exploration dans les vignobles bordelais.", "Bordeaux, France", 44.8378, -0.5792, 20},
+		{"Séance de stretching", "Relaxation & bien-être", "relaxant", "Étirements doux pour relâcher les tensions.", "Parc Monceau, Paris", 48.8790, 2.3086, 12},
+		{"Atelier cuisine saine", "Activités créatives", "social", "Cuisine collective simple et gourmande.", "Part-Dieu, Lyon", 45.7600, 4.8599, 14},
+		{"Marche du soir", "Activités sportives", "actif", "Course douce au bord de la Garonne.", "Quais de Bordeaux, Bordeaux", 44.8410, -0.5720, 16},
+		{"Groupe de parole parentale", "Groupes de parole", "social", "Échanges autour de la parentalité.", "Centre-ville, Rennes", 48.1173, -1.6778, 15},
+		{"Yoga du matin", "Relaxation & bien-être", "relaxant", "Séance de yoga pour bien commencer la journée.", "Plage de Nice", 43.7009, 7.2684, 20},
+		{"Atelier jardinage", "Activités nature", "faible-énergie", "Jardinage collectif en plein air.", "Parc de la Tête d'Or, Lyon", 45.7797, 4.8550, 12},
+		{"Café littéraire", "Lieux sociaux", "social", "Lecture partagée autour de thèmes positifs.", "Rue de la République, Lyon", 45.7580, 4.8357, 14},
+		{"Sortie randonnée urbaine", "Activités sportives", "actif", "Balade culturelle et sportive.", "Centre-ville, Annecy", 45.8992, 6.1294, 14},
+		{"Atelier relaxation", "Relaxation & bien-être", "relaxant", "Exercices de respiration en petit groupe.", "Parc de la Ciutadella, Perpignan", 42.6887, 2.8940, 12},
+		{"Cercle de parole créativité", "Groupes de parole", "social", "Partage autour de projets créatifs.", "Médiathèque, Nantes", 47.2184, -1.5536, 16},
+		{"Marche en bord de mer", "Activités nature", "actif", "Promenade revitalisante sur la plage.", "Plage du Prado, Marseille", 43.2624, 5.3840, 18},
+		{"Atelier poterie", "Activités créatives", "relaxant", "Modelage et détente en groupe.", "Croix-Rousse, Lyon", 45.7769, 4.8266, 10},
+		{"Randonnée verte", "Activités nature", "actif", "Balade dans la forêt vosgienne.", "Nancy, France", 48.6936, 6.1845, 16},
+		{"Café mindfulness", "Lieux sociaux", "social", "Pause calme et bienveillance en groupe.", "Place de la Comédie, Montpellier", 43.6108, 3.8767, 14},
+		{"Atelier dessin nature", "Activités créatives", "relaxant", "Croquis en plein air.", "Saint-Malo, France", 48.6438, -2.0258, 12},
+		{"Jogging du matin", "Activités sportives", "actif", "Course collective en bord de rivière.", "Quais de Seine, Paris", 48.8566, 2.3522, 20},
+		{"Groupe de parole art-thérapie", "Groupes de parole", "social", "Échange autour des émotions par l'art.", "Strasbourg, France", 48.5734, 7.7521, 12},
+		{"Atelier relaxation musicale", "Relaxation & bien-être", "relaxant", "Écoute et détente guidée.", "Parc Jean-Moulin, Toulouse", 43.5617, 1.4532, 12},
+		{"Atelier tricot solidaire", "Lieux sociaux", "social", "Tricot collectif et discussions bienveillantes.", "Café associatif, Marseille", 43.2965, 5.3698, 10},
+		{"Promenade nature", "Activités nature", "faible-énergie", "Balade douce au bord du lac.", "Lac Annecy, Annecy", 45.9000, 6.1290, 16},
+		{"Atelier mosaïque", "Activités créatives", "relaxant", "Création artistique pas à pas.", "Vieux Nice, Nice", 43.7102, 7.2620, 12},
+		{"Randonnée citadine", "Activités sportives", "actif", "Marche sportive dans la vieille ville.", "Montpellier, France", 43.6108, 3.8767, 18},
+		{"Séance de méditation pleine conscience", "Relaxation & bien-être", "relaxant", "Méditation guidée au jardin.", "Parc Borély, Marseille", 43.2626, 5.3994, 14},
+		{"Atelier slam", "Activités créatives", "social", "Écriture et partage de textes.", "Belleville, Paris", 48.8728, 2.3820, 12},
+		{"Marche santé", "Activités sportives", "actif", "Marche collective pour se remettre en mouvement.", "Quais de la Loire, Orléans", 47.9029, 1.9093, 16},
+		{"Groupe de parole anxiété", "Groupes de parole", "social", "Écoute et soutien entre participants.", "Centre-ville, Rouen", 49.4431, 1.0993, 14},
+		{"Atelier bien-être créatif", "Activités créatives", "relaxant", "Création d'objets zen.", "Parc de la Colombière, Dijon", 47.3220, 5.0417, 12},
+		{"Relaxation au lac", "Activités nature", "relaxant", "Séance face à l'eau pour se détendre.", "Lac du Bourget, Aix-les-Bains", 45.6860, 5.9078, 12},
+	}
+
+	for _, seed := range seeds {
+		var categoryID int
+		if err := ZUKUKDB.QueryRow(`SELECT id FROM activity_categories WHERE name = ?`, seed.Category).Scan(&categoryID); err != nil {
+			continue
+		}
+		ZUKUKDB.Exec(`
+			INSERT INTO activities (
+				category_id, name, description, address, latitude, longitude,
+				schedule, rating, max_places, mood, photo
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			categoryID, seed.Name, seed.Desc, seed.Address, seed.Lat, seed.Lng,
+			"", 0, seed.MaxPlaces, seed.Mood, "",
+		)
+	}
+}
 func SoftDeletePost(postID, deletedBy int, reason string) error {
 	var title, content string
 	var userID int

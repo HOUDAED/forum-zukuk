@@ -27,3 +27,7 @@ desktop.ini
 
 *.log
 logs/
+.env.local
+.env.production
+.env.development
+.env.test       
