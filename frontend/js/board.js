@@ -1,17 +1,85 @@
-// Board JavaScript - Frontend Logic (v2 – posts réels + recherche + mode invité + PAGINATION)
+// Board JavaScript - Frontend Logic (v2 – posts réels + recherche + mode invité + PAGINATION + TOASTS)
 const API_BASE = window.location.hostname === 'localhost' 
     ? 'http://localhost:8081/api' 
     : '/api';// REMPLACE PAR TON VRAI LIEN RENDER
+
+// ─── UI : TOAST & MODALE DE CONFIRMATION ────────────────────────────────────
+function showToast(msg, isError = false) {
+    const existing = document.getElementById('board-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'board-toast';
+    toast.textContent = msg;
+    toast.style.cssText = `position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: ${isError ? '#fef2f2' : '#f0fdf4'}; color: ${isError ? '#ef4444' : '#166534'}; border: 1px solid ${isError ? '#fecaca' : '#bbf7d0'}; padding: 14px 28px; border-radius: 16px; font-weight: 600; font-size: 0.95rem; box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 9999; transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.2, 1);`;
+    document.body.appendChild(toast);
+    
+    requestAnimationFrame(() => toast.style.transform = 'translateX(-50%) translateY(0)');
+    setTimeout(() => {
+        toast.style.transform = 'translateX(-50%) translateY(100px)';
+        setTimeout(() => toast.remove(), 400);
+    }, 3500);
+}
+
+function showConfirmModal(title, message, onConfirm) {
+    const existing = document.getElementById('zukuk-confirm');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'zukuk-confirm';
+    overlay.style.cssText = `
+        position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(8px);
+        z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;
+        opacity: 0; transition: opacity 0.3s ease;
+    `;
+
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        background: white; border-radius: 24px; padding: 32px; width: 100%; max-width: 400px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); transform: translateY(20px) scale(0.95);
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); text-align: center;
+    `;
+
+    modal.innerHTML = `
+        <div style="width: 64px; height: 64px; background: #fef2f2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" style="width: 32px; height: 32px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+        </div>
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin-bottom: 12px; font-family: 'Merriweather', serif;">${title}</h3>
+        <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 28px; line-height: 1.5;">${message}</p>
+        <div style="display: flex; gap: 12px;">
+            <button id="cancel-confirm" style="flex: 1; padding: 12px; border: 2px solid #e2e8f0; border-radius: 14px; background: white; color: #475569; font-weight: 600; cursor: pointer; transition: all 0.2s;">Annuler</button>
+            <button id="accept-confirm" style="flex: 1; padding: 12px; border: none; border-radius: 14px; background: #ef4444; color: white; font-weight: 600; cursor: pointer; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3); transition: all 0.2s;">Supprimer</button>
+        </div>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    requestAnimationFrame(() => {
+        overlay.style.opacity = '1';
+        modal.style.transform = 'translateY(0) scale(1)';
+    });
+
+    const close = () => {
+        overlay.style.opacity = '0';
+        modal.style.transform = 'translateY(20px) scale(0.95)';
+        setTimeout(() => overlay.remove(), 300);
+    };
+
+    document.getElementById('cancel-confirm').onclick = close;
+    overlay.onclick = (e) => { if (e.target === overlay) close(); };
+    document.getElementById('accept-confirm').onclick = () => { close(); onConfirm(); };
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 🎨 SYSTÈME DE THÈME GLOBAL ZUKUK
 // ─────────────────────────────────────────────────────────────────────────────
 
-// 1. Anti-scintillement : Appliquer le thème local IMMÉDIATEMENT
 const savedTheme = localStorage.getItem('zukuk_theme') || 'light';
 document.body.setAttribute('data-theme', savedTheme);
 
-// 2. Synchronisation BDD : Vérifier le vrai thème de l'utilisateur au chargement
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         const res = await fetch(`${API_BASE}/settings/`, { credentials: 'include' });
@@ -22,9 +90,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 localStorage.setItem('zukuk_theme', settings.theme);
             }
         }
-    } catch (e) {
-        // Utilisateur non connecté, on garde le thème local
-    }
+    } catch (e) {}
 });
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
@@ -40,38 +106,30 @@ const sortSelect     = document.getElementById('boardSort');
 const orderSelect    = document.getElementById('boardOrder');
 const newPostBtn     = document.getElementById('newPostBtn');
 
-// ── State ─────────────────────────────────────────────────────────────────────
 let currentMood   = 'Calme';
-let currentUser   = null;   // null = non connecté
+let currentUser   = null;
 let searchTimer   = null;
-
-// 🔥 NOUVEAU : État pour la pagination
 let currentOffset = 0; 
 const POSTS_PER_PAGE = 20;
-
 const fetchOpts = { credentials: 'include' };
 
-// ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  await checkAuth();          // récupère currentUser
+  await checkAuth();
   updateGreeting();
   renderMoodsLocal();
-  await loadCurrentMood();    // affichage immédiat
-  loadPosts(false);           // 🔥 false = on charge depuis le début (pas de append)
+  await loadCurrentMood();
+  loadPosts(false);
   renderStatsLocal();
   fetchRandomQuote();
   setupEventListeners();
   updateUIForAuthState();
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AUTH
-// ─────────────────────────────────────────────────────────────────────────────
 async function checkAuth() {
   try {
     const res = await fetch(`${API_BASE}/me`, fetchOpts);
-    if (res.ok) { currentUser = await res.json(); }
-  } catch (_) { /* non connecté */ }
+    if (res.ok) currentUser = await res.json();
+  } catch (_) {}
 }
 
 function updateUIForAuthState() {
@@ -84,29 +142,17 @@ function updateUIForAuthState() {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LOAD POSTS (Avec Pagination)
-// ─────────────────────────────────────────────────────────────────────────────
 async function loadPosts(append = false) {
-  // Si on lance une nouvelle recherche ou un nouveau tri, on recommence de zéro
   if (!append) {
       currentOffset = 0;
-      if (discussionsList) {
-          discussionsList.innerHTML = '<p style="text-align:center; color:var(--text-gray); padding:24px;">Chargement des discussions...</p>';
-      }
+      if (discussionsList) discussionsList.innerHTML = '<p style="text-align:center; color:var(--text-gray); padding:24px;">Chargement des discussions...</p>';
   }
 
-  const query = searchInput  ? searchInput.value.trim()   : '';
-  const sort  = sortSelect   ? sortSelect.value            : 'date';
-  const order = orderSelect  ? orderSelect.value           : 'desc';
+  const query = searchInput ? searchInput.value.trim() : '';
+  const sort  = sortSelect  ? sortSelect.value : 'date';
+  const order = orderSelect ? orderSelect.value : 'desc';
 
-  // Intégration de LIMIT et OFFSET
-  const params = new URLSearchParams({ 
-      sort, 
-      order, 
-      limit: POSTS_PER_PAGE, 
-      offset: currentOffset 
-  });
+  const params = new URLSearchParams({ sort, order, limit: POSTS_PER_PAGE, offset: currentOffset });
   if (query) params.set('query', query);
 
   try {
@@ -115,14 +161,10 @@ async function loadPosts(append = false) {
     const data = await res.json();
     renderPosts(data.posts || [], append);
   } catch (err) {
-    console.error('Erreur chargement posts:', err);
     if (!append) renderPostsLocal();
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// RENDER POSTS
-// ─────────────────────────────────────────────────────────────────────────────
 const TAG_COLORS = {
   'Stress': 'tag-stress', 'Anxiété': 'tag-stress',
   'Bien-être': 'tag-wellbeing', 'Sport': 'tag-wellbeing', 'Santé mentale': 'tag-wellbeing',
@@ -141,13 +183,8 @@ function timeAgo(dateStr) {
 
 function renderPosts(posts, append = false) {
   const loadMoreBtn = document.getElementById('btn-load-more');
+  if (!append) discussionsList.innerHTML = '';
 
-  // Si on ne "charge pas plus", on vide la liste
-  if (!append) {
-      discussionsList.innerHTML = '';
-  }
-
-  // Cas où il n'y a absolument rien (base vide ou recherche sans résultat)
   if (posts.length === 0 && currentOffset === 0) {
     discussionsList.innerHTML = '<p style="color:var(--text-gray);text-align:center;padding:24px">Aucun post trouvé.</p>';
     if (loadMoreBtn) loadMoreBtn.style.display = 'none';
@@ -158,8 +195,6 @@ function renderPosts(posts, append = false) {
     const card = document.createElement('div');
     card.className = 'discussion-card';
     card.dataset.postId = post.id;
-
-    // Petite animation individuelle
     card.style.opacity   = '0';
     card.style.transform = 'translateY(10px)';
     card.style.transition = `opacity .4s ease, transform .4s ease`;
@@ -190,97 +225,53 @@ function renderPosts(posts, append = false) {
       <div class="discussion-footer">
         <span class="discussion-tag ${tagClass(post.category)}">${escHtml(post.category||'Général')}</span>
         <div class="discussion-actions">
-          <button class="discussion-action like${currentUser?'':' disabled-action'}" data-id="${post.id}"
-            title="${currentUser?'Liker':'Connectez-vous pour liker'}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-            </svg>
+          <button class="discussion-action like${currentUser?'':' disabled-action'}" data-id="${post.id}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
             <span>${post.likes_count}</span>
           </button>
-          <button class="discussion-action comment" data-id="${post.id}" title="Voir les commentaires">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-            </svg>
+          <button class="discussion-action comment" data-id="${post.id}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
             <span>${post.comments_count}</span>
           </button>
           ${ownerActions}
         </div>
       </div>`;
 
-    // Click on card → post detail (ignore buttons)
     card.addEventListener('click', (e) => {
       if (e.target.closest('button')) return;
       window.location.href = `/post/${post.id}`;
     });
 
-    // Like
     const likeBtn = card.querySelector('.like');
-    likeBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      if (!currentUser) { showAuthToast(); return; }
-      toggleLike(post.id, likeBtn);
-    });
+    likeBtn.addEventListener('click', e => { e.stopPropagation(); if (!currentUser) { showAuthToast(); return; } toggleLike(post.id, likeBtn); });
 
-    // Comment → go to post page
-    card.querySelector('.comment').addEventListener('click', e => {
-      e.stopPropagation();
-      window.location.href = `/post/${post.id}#comments`;
-    });
+    card.querySelector('.comment').addEventListener('click', e => { e.stopPropagation(); window.location.href = `/post/${post.id}#comments`; });
 
-    // Edit
     const editBtn = card.querySelector('.edit-post');
-    if (editBtn) {
-      editBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        openEditPostModal(post);
-      });
-    }
+    if (editBtn) editBtn.addEventListener('click', e => { e.stopPropagation(); openEditPostModal(post); });
 
-    // Delete
     const delBtn = card.querySelector('.delete-post');
-    if (delBtn) {
-      delBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        deletePost(post.id, card);
-      });
-    }
+    if (delBtn) delBtn.addEventListener('click', e => { e.stopPropagation(); deletePost(post.id, card); });
 
     discussionsList.appendChild(card);
-    
-    // Déclencheur d'animation fluide
-    requestAnimationFrame(() => { 
-        card.style.opacity = '1'; 
-        card.style.transform = 'translateY(0)'; 
-    });
+    requestAnimationFrame(() => { card.style.opacity = '1'; card.style.transform = 'translateY(0)'; });
   });
 
-  // 🔥 GESTION DU BOUTON "CHARGER PLUS"
   if (loadMoreBtn) {
-      if (posts.length < POSTS_PER_PAGE) {
-          loadMoreBtn.style.display = 'none'; // Plus rien à charger
-      } else {
-          loadMoreBtn.style.display = 'inline-block'; // On affiche
-      }
+      loadMoreBtn.style.display = (posts.length < POSTS_PER_PAGE) ? 'none' : 'inline-block';
   }
 }
 
 function renderPostsLocal() {
   const mock = [
-    { id:1, author:'Marie_123', created_at: new Date(Date.now()-7200000).toISOString(), title:"J'ai du mal à gérer mon stress au travail", content:"Depuis quelques semaines, j'ai l'impression que tout s'accumule et que je n'arrive plus à souffler.", category:'Stress', likes_count:12, comments_count:8, user_id:-1, avatar_url:'' },
-    { id:2, author:'Thomas_zen', created_at: new Date(Date.now()-18000000).toISOString(), title:"Techniques de respiration qui m'ont aidé", content:"Je voulais partager quelques exercices simples qui ont vraiment changé ma façon de gérer l'anxiété.", category:'Bien-être', likes_count:24, comments_count:15, user_id:-1, avatar_url:'' },
-    { id:3, author:'Sophie_22', created_at: new Date(Date.now()-86400000).toISOString(), title:"Se sentir seul à l'université", content:"La première année est vraiment difficile. Est-ce que d'autres ont ressenti la même chose ?", category:'Solitude', likes_count:18, comments_count:22, user_id:-1, avatar_url:'' },
+    { id:1, author:'Marie_123', created_at: new Date(Date.now()-7200000).toISOString(), title:"J'ai du mal à gérer mon stress au travail", content:"Depuis quelques semaines...", category:'Stress', likes_count:12, comments_count:8, user_id:-1, avatar_url:'' }
   ];
   renderPosts(mock, false);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LIKE TOGGLE
-// ─────────────────────────────────────────────────────────────────────────────
 async function toggleLike(postId, btn) {
   try {
-    const res = await fetch(`${API_BASE}/posts/${postId}/like`, {
-      method: 'POST', credentials: 'include',
-    });
+    const res = await fetch(`${API_BASE}/posts/${postId}/like`, { method: 'POST', credentials: 'include' });
     if (res.ok) {
       const data = await res.json();
       btn.querySelector('span').textContent = data.count;
@@ -289,11 +280,7 @@ async function toggleLike(postId, btn) {
   } catch (err) { console.error(err); }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CREATE / EDIT / DELETE POST
-// ─────────────────────────────────────────────────────────────────────────────
 let categories = [];
-
 async function fetchCategories() {
   try {
     const res = await fetch(`${API_BASE}/categories`, fetchOpts);
@@ -302,11 +289,10 @@ async function fetchCategories() {
 }
 
 function buildCategoryOptions(selectedId) {
-  return categories.map(c =>
-    `<option value="${c.id}"${c.id===selectedId?' selected':''}>${escHtml(c.name)}</option>`
-  ).join('');
+  return categories.map(c => `<option value="${c.id}"${c.id===selectedId?' selected':''}>${escHtml(c.name)}</option>`).join('');
 }
 
+// 🔴 ICI : REMPLACEMENT DE L'ALERTE POUR LA CRÉATION DE POST
 function openNewPostModal() {
   if (!currentUser) { showAuthToast(); return; }
   fetchCategories().then(() => {
@@ -323,20 +309,44 @@ function openNewPostModal() {
         const content = document.getElementById('m-content').value.trim();
         const catId   = document.getElementById('m-cat').value || null;
         const anon    = document.getElementById('m-anon').checked ? 1 : 0;
-        const res = await fetch(`${API_BASE}/posts`, {
-          method:'POST', credentials:'include',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ title, content, category_id: catId ? parseInt(catId) : null, is_anonymous: anon }),
-        });
-        const data = await res.json();
-        if (!res.ok) { alert(data.error); return false; }
-        closeModal();
-        window.location.href = `/post/${data.id}`;
+
+        // Pré-validation Frontend avec Toast
+        if (title.length < 3) { showToast("Le titre doit faire au moins 3 caractères.", true); return; }
+        if (content.length < 10) { showToast("Le contenu doit faire au moins 10 caractères.", true); return; }
+
+        const btn = document.getElementById('modalConfirm');
+        const originalText = btn.textContent;
+        btn.textContent = "Publication...";
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(`${API_BASE}/posts`, {
+              method:'POST', credentials:'include',
+              headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({ title, content, category_id: catId ? parseInt(catId) : null, is_anonymous: anon }),
+            });
+            const data = await res.json();
+            
+            if (!res.ok) { 
+                showToast(data.error || "Erreur serveur.", true); 
+                btn.textContent = originalText;
+                btn.disabled = false;
+                return; 
+            }
+            closeModal();
+            showToast("✨ Post publié avec succès !", false);
+            setTimeout(() => window.location.href = `/post/${data.id}`, 1000);
+        } catch (err) {
+            showToast("Serveur injoignable.", true);
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
       }
     );
   });
 }
 
+// 🔴 ICI : REMPLACEMENT DE L'ALERTE POUR LA MODIFICATION
 function openEditPostModal(post) {
   fetchCategories().then(() => {
     showModal('Modifier le post',
@@ -345,39 +355,65 @@ function openEditPostModal(post) {
       async () => {
         const title   = document.getElementById('m-title').value.trim();
         const content = document.getElementById('m-content').value.trim();
-        const res = await fetch(`${API_BASE}/posts/${post.id}`, {
-          method:'PUT', credentials:'include',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ title, content }),
-        });
-        const data = await res.json();
-        if (!res.ok) { alert(data.error); return false; }
-        closeModal();
-        loadPosts(false); // On recharge la liste sans "append" après modif
+        
+        if (title.length < 3) { showToast("Le titre doit faire au moins 3 caractères.", true); return; }
+        if (content.length < 10) { showToast("Le contenu doit faire au moins 10 caractères.", true); return; }
+
+        const btn = document.getElementById('modalConfirm');
+        const originalText = btn.textContent;
+        btn.textContent = "Sauvegarde...";
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(`${API_BASE}/posts/${post.id}`, {
+              method:'PUT', credentials:'include',
+              headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({ title, content }),
+            });
+            const data = await res.json();
+            
+            if (!res.ok) { 
+                showToast(data.error || "Erreur serveur.", true); 
+                btn.textContent = originalText;
+                btn.disabled = false;
+                return; 
+            }
+            closeModal();
+            showToast("✏️ Modification enregistrée !", false);
+            loadPosts(false);
+        } catch (err) {
+            showToast("Serveur injoignable.", true);
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
       }
     );
   });
 }
 
+// 🔴 ICI : REMPLACEMENT DU "CONFIRM" PAR LA MODALE ÉLÉGANTE
 async function deletePost(postId, card) {
-  if (!confirm('Supprimer ce post et tous ses commentaires ?')) return;
-  const res = await fetch(`${API_BASE}/posts/${postId}`, { method:'DELETE', credentials:'include' });
-  if (res.ok) {
-    card.style.opacity = '0';
-    card.style.transform = 'translateY(-10px)';
-    setTimeout(() => card.remove(), 300);
-  }
+    showConfirmModal(
+        "Supprimer la discussion ?",
+        "Cette action est irréversible. Le post et tous ses commentaires seront effacés pour tout le monde.",
+        async () => {
+            try {
+                const res = await fetch(`${API_BASE}/posts/${postId}`, { method:'DELETE', credentials:'include' });
+                if (res.ok) {
+                    showToast("🗑️ Discussion supprimée.", false);
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(-10px)';
+                    setTimeout(() => card.remove(), 300);
+                } else {
+                    showToast("Erreur lors de la suppression.", true);
+                }
+            } catch (err) { showToast("Erreur serveur.", true); }
+        }
+    );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MOODS
-// ─────────────────────────────────────────────────────────────────────────────
 function renderMoodsLocal() {
-  const moods = [
-    { name:'Bien', emoji:'😊' }, { name:'Calme', emoji:'😌' },
-    { name:'Triste', emoji:'😢' }, { name:'Anxieux', emoji:'😰' },
-    { name:'Colère', emoji:'😡' },
-  ];
+  const moods = [{ name:'Bien', emoji:'😊' }, { name:'Calme', emoji:'😌' }, { name:'Triste', emoji:'😢' }, { name:'Anxieux', emoji:'😰' }, { name:'Colère', emoji:'😡' }];
   moodGrid.innerHTML = '';
   moods.forEach(mood => {
     const btn = document.createElement('button');
@@ -408,18 +444,9 @@ function selectMood(name) {
 }
 
 async function saveMood(mood) {
-  try {
-    await fetch(`${API_BASE}/mood`, {
-      method:'POST', credentials:'include',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(mood),
-    });
-  } catch (_) {}
+  try { await fetch(`${API_BASE}/mood`, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify(mood) }); } catch (_) {}
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// STATS (local)
-// ─────────────────────────────────────────────────────────────────────────────
 function renderStatsLocal() {
   statsSection.innerHTML = '';
   [{ title:'Posts partagés', color:'blue' }, { title:'Réponses reçues', color:'red' }, { title:'Jours actifs', color:'purple' }].forEach(s => {
@@ -430,15 +457,12 @@ function renderStatsLocal() {
   });
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// QUOTE
-// ─────────────────────────────────────────────────────────────────────────────
 async function fetchRandomQuote() {
   try {
     const res = await fetch(`${API_BASE}/quote`, fetchOpts);
     const data = await res.json();
     displayQuote(data.quote);
-  } catch (_) { displayQuote(LOCAL_QUOTES[Math.floor(Math.random()*LOCAL_QUOTES.length)]); }
+  } catch (_) { displayQuote("Tu n'es pas seul. Chaque jour est une nouvelle opportunité."); }
 }
 
 function displayQuote(q) {
@@ -447,33 +471,17 @@ function displayQuote(q) {
   quoteText.style.display = 'block';
 }
 
-const LOCAL_QUOTES = [
-  "Tu n'es pas seul. Chaque jour est une nouvelle opportunité.",
-  "Prendre soin de soi n'est pas un luxe, c'est une nécessité.",
-  "Chaque petit pas vers la guérison est une victoire.",
-];
-
 async function loadCurrentMood() {
-  if (!currentUser) return; // Si non connecté, on garde 'Calme' par défaut
-
+  if (!currentUser) return;
   try {
     const res = await fetch(`${API_BASE}/me/mood-history`, fetchOpts);
     if (!res.ok) return;
-    
     const data = await res.json();
-    
     if (data.history && data.history.length > 0) {
-      const lastMood = data.history[0]; 
-      
-      // On met à jour la variable globale et l'interface visuelle
-      currentMood = lastMood.mood;
+      currentMood = data.history[0].mood;
       selectMood(currentMood);
     }
-
-    
-  } catch (err) {
-    console.error('Erreur chargement humeur:', err);
-  }
+  } catch (err) {}
 }
 
 async function updateGreeting() {
@@ -491,11 +499,7 @@ async function updateGreeting() {
   el.innerHTML = `${greeting} <span class="wave-emoji">👋</span>`;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// EVENT LISTENERS
-// ─────────────────────────────────────────────────────────────────────────────
 function setupEventListeners() {
-  // Nav
   navButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       navButtons.forEach(b => b.classList.remove('active'));
@@ -504,65 +508,39 @@ function setupEventListeners() {
     });
   });
 
-  // New post button
   if (newPostBtn) newPostBtn.addEventListener('click', openNewPostModal);
 
-  // Search input (debounced) - Réinitialise la pagination
-  if (searchInput) {
-    searchInput.addEventListener('input', () => {
-      clearTimeout(searchTimer);
-      searchTimer = setTimeout(() => loadPosts(false), 350); 
-    });
-  }
-
-  // Sort / Order selects - Réinitialisent la pagination
+  if (searchInput) searchInput.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => loadPosts(false), 350); });
   if (sortSelect)  sortSelect.addEventListener('change', () => loadPosts(false));
   if (orderSelect) orderSelect.addEventListener('change', () => loadPosts(false));
 
-  // 🔥 NOUVEAU : Écouteur pour le bouton "Charger plus"
   const loadMoreBtn = document.getElementById('btn-load-more');
   if (loadMoreBtn) {
-      loadMoreBtn.addEventListener('click', () => {
-          currentOffset += POSTS_PER_PAGE;
-          loadPosts(true); // true = on rajoute à la suite
-      });
+      loadMoreBtn.addEventListener('click', () => { currentOffset += POSTS_PER_PAGE; loadPosts(true); });
   }
 
-  // Modal backdrop click to close
-  document.addEventListener('click', e => {
-    if (e.target.id === 'boardModal') closeModal();
-  });
+  document.addEventListener('click', e => { if (e.target.id === 'boardModal') closeModal(); });
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MODAL
-// ─────────────────────────────────────────────────────────────────────────────
 function showModal(title, bodyHTML, onConfirm) {
   const existing = document.getElementById('boardModal');
   if (existing) existing.remove();
 
   const modal = document.createElement('div');
   modal.id = 'boardModal';
-  modal.style.cssText = `
-    position:fixed;inset:0;background:rgba(0,0,0,0.35);backdrop-filter:blur(4px);
-    z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;`;
+  modal.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.35);backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;`;
   modal.innerHTML = `
-    <div style="background:white;border-radius:24px;padding:32px;width:100%;max-width:520px;
-                box-shadow:0 20px 60px rgba(0,0,0,0.15);position:relative;animation:fadeIn .2s ease">
-      <button id="closeModal" style="position:absolute;top:16px;right:16px;background:none;border:none;
-              font-size:22px;cursor:pointer;color:#9ca3af">✕</button>
+    <div style="background:white;border-radius:24px;padding:32px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,0.15);position:relative;animation:fadeIn .2s ease">
+      <button id="closeModal" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af">✕</button>
       <h3 style="font-size:1.3rem;font-weight:700;color:#1e293b;margin-bottom:20px">${escHtml(title)}</h3>
       <div id="modalBody">${bodyHTML}</div>
       <div style="display:flex;gap:12px;margin-top:20px">
-        <button id="modalCancel" style="flex:1;padding:12px;border:2px solid #e2e8f0;border-radius:12px;
-                background:white;font-weight:600;cursor:pointer;font-family:inherit">Annuler</button>
-        <button id="modalConfirm" style="flex:2;padding:12px;background:linear-gradient(135deg,#818cf8,#a78bfa);
-                color:white;border:none;border-radius:12px;font-weight:600;cursor:pointer;font-family:inherit">Confirmer</button>
+        <button id="modalCancel" style="flex:1;padding:12px;border:2px solid #e2e8f0;border-radius:12px;background:white;font-weight:600;cursor:pointer;font-family:inherit">Annuler</button>
+        <button id="modalConfirm" style="flex:2;padding:12px;background:linear-gradient(135deg,#818cf8,#a78bfa);color:white;border:none;border-radius:12px;font-weight:600;cursor:pointer;font-family:inherit">Confirmer</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
 
-  // Modal-specific custom checkbox behaviour
   const anonCheckbox = modal.querySelector('#m-anon');
   if (anonCheckbox) {
     anonCheckbox.addEventListener('change', function() {
@@ -583,32 +561,19 @@ function closeModal() {
   if (m) m.remove();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AUTH TOAST
-// ─────────────────────────────────────────────────────────────────────────────
 function showAuthToast() {
   const existing = document.getElementById('authToast');
   if (existing) { existing.style.animation = 'none'; void existing.offsetWidth; existing.style.animation=''; return; }
 
   const toast = document.createElement('div');
   toast.id = 'authToast';
-  toast.innerHTML = `
-    <span>🔒 <a href="/login" style="color:#818cf8;font-weight:700;text-decoration:underline">Connectez-vous</a> pour interagir</span>`;
-  toast.style.cssText = `
-    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
-    background:white;padding:14px 24px;border-radius:16px;
-    box-shadow:0 8px 30px rgba(0,0,0,0.12);font-size:0.95rem;
-    color:#1e293b;z-index:2000;animation:slideUp .3s ease;
-    border:1px solid rgba(129,140,248,0.3)`;
+  toast.innerHTML = `<span>🔒 <a href="/login" style="color:#818cf8;font-weight:700;text-decoration:underline">Connectez-vous</a> pour interagir</span>`;
+  toast.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:white;padding:14px 24px;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,0.12);font-size:0.95rem;color:#1e293b;z-index:2000;animation:slideUp .3s ease;border:1px solid rgba(129,140,248,0.3)`;
   document.body.appendChild(toast);
   setTimeout(() => { if (toast.parentNode) toast.remove(); }, 3500);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// UTILS
-// ─────────────────────────────────────────────────────────────────────────────
 function escHtml(str) {
   if (typeof str !== 'string') return '';
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-            .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 }
