@@ -436,7 +436,7 @@ function selectMood(name) {
     'Calme':   'linear-gradient(135deg,#f0fdf4 0%,#dcfce7 50%,#e0f2fe 100%)',
     'Triste':  'linear-gradient(135deg,#eff6ff 0%,#dbeafe 50%,#e0e7ff 100%)',
     'Anxieux': 'linear-gradient(135deg,#f8fafc 0%,#f1f5f9 50%,#e2e8f0 100%)',
-    'Colère':  'linear-gradient(135deg,#fff7ed 0%,#ffedd5 50%,#fef08a 100%)',
+    'Colère':  'linear-gradient(135deg, #FFE5E5 0%, #FFC8C8 50%, #FF9F9F 100%)',
   };
   const bg = document.querySelector('.background-gradient');
   if (bg) { bg.style.transition = 'background 1.5s ease-in-out'; bg.style.background = colors[name] || colors['Calme']; }

@@ -7,6 +7,9 @@ let activities = [];
 let currentUser = null;
 let selectedActivity = null;
 
+const savedTheme = localStorage.getItem('zukuk_theme') || 'light';
+document.body.setAttribute('data-theme', savedTheme);
+
 const qs = (s) => document.querySelector(s);
 
 // ── TOAST UNIVERSEL ────────────────────────────────────────────────────────
