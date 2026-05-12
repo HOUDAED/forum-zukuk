@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -25,18 +24,26 @@ func main() {
 
 	router := gin.Default()
 
-	// ── CORS ────────────────────────────────────────────────────────────────
+	// ── CORS (Version Ultra-Robuste) ────────────────────────────────────────
 	router.Use(func(c *gin.Context) {
-		origin := os.Getenv("FRONTEND_ORIGIN")
-		if origin == "" {
-			origin = "http://localhost:3000"
+		// 1. On lit l'origine du navigateur qui fait la requête
+		reqOrigin := c.Request.Header.Get("Origin")
+		
+		// 2. Si l'origine existe, on l'autorise dynamiquement (parfait pour Render et Local)
+		if reqOrigin != "" {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", reqOrigin)
+		} else {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", "*") // Fallback
 		}
-		c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+		
+		// 3. On autorise les cookies et les headers nécessaires
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
-		if c.Request.Method == http.MethodOptions {
-			c.AbortWithStatus(http.StatusNoContent)
+
+		// 4. On gère les requêtes "Preflight" (OPTIONS) que le navigateur fait avant un POST
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
 			return
 		}
 		c.Next()

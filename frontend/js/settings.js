@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     
-    const API_BASE = 'http://localhost:8081';
+    const API_BASE = window.location.hostname === 'localhost' 
+    ? 'http://localhost:8081' 
+    : 'https://forum-zukuk.onrender.com'; // REMPLACE PAR TON VRAI LIEN RENDER
     let currentSettings = {};
 
     // ─── 1. GESTION DES ONGLETS ──────────────────────────────────────────

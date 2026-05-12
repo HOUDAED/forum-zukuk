@@ -1,4 +1,6 @@
-const API_BASE  = 'http://localhost:8081/api';
+const API_BASE = window.location.hostname === 'localhost' 
+    ? 'http://localhost:8081/api' 
+    : 'https://forum-zukuk.onrender.com/api'; // REMPLACE PAR TON VRAI LIEN RENDER
 const fetchOpts = { credentials: 'include' };
 
 // ─────────────────────────────────────────────────────────────────────────────
