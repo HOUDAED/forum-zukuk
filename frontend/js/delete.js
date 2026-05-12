@@ -1,6 +1,6 @@
 const API_BASE = window.location.hostname === 'localhost' 
     ? 'http://localhost:8081/api' 
-    : 'https://forum-zukuk.onrender.com/api'; // REMPLACE PAR TON VRAI LIEN RENDER
+    : '/api';// REMPLACE PAR TON VRAI LIEN RENDER
 const fetchOpts = { credentials: 'include' };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -14,7 +14,7 @@ document.body.setAttribute('data-theme', savedTheme);
 // 2. Synchronisation BDD : Vérifier le vrai thème de l'utilisateur au chargement
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        const res = await fetch('http://localhost:8081/api/settings/', { credentials: 'include' });
+        const res = await fetch(`${API_BASE}/settings/`, { credentials: 'include' });
         if (res.ok) {
             const settings = await res.json();
             if (settings.theme && settings.theme !== savedTheme) {

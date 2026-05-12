@@ -5,6 +5,8 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,45 +23,39 @@ func main() {
 		}
 	}
 
-	// Fichiers statiques (Déjà parfaitement gérés par ton HEAD)
+	// 2. Fichiers statiques
 	mux.Handle("/frontend/css/", http.StripPrefix("/frontend/css/", http.FileServer(http.Dir(filepath.Join(baseDir, "css")))))
 	mux.Handle("/frontend/js/", http.StripPrefix("/frontend/js/", http.FileServer(http.Dir(filepath.Join(baseDir, "js")))))
 
-	// 2. Pré-chargement ULTRA STRICT des templates
-	t := template.New("Zukuk")
+	// 🔴 3. LA MAGIE : LE REVERSE PROXY 🔴
+	// Toutes les requêtes qui commencent par "/api/" sont capturées par le frontend 
+	// et envoyées discrètement au backend sur le port 8081.
+	target, _ := url.Parse("http://localhost:8081")
+	proxy := httputil.NewSingleHostReverseProxy(target)
+	mux.Handle("/api/", proxy)
 
-	// 🔴 ON EXIGE LES PARTIALS
+	// 4. Pré-chargement des templates
+	t := template.New("Zukuk")
 	partialsPath := filepath.Join(baseDir, "html", "partials", "*.html")
 	if _, err := t.ParseGlob(partialsPath); err != nil {
-		log.Fatalf("\n🚨 ERREUR FATALE (DÉMARRAGE STOPPÉ) 🚨\nJe ne trouve aucun fichier dans : %s\n👉 Vérifie que le dossier 'partials' existe bien.\nErreur technique : %v\n\n", partialsPath, err)
+		log.Fatalf("Erreur Partials : %v\n", err)
 	}
 
-	// 🔴 ON EXIGE LES PAGES (carte.html sera chargée automatiquement ici !)
 	pagesPath := filepath.Join(baseDir, "html", "*.html")
 	if _, err := t.ParseGlob(pagesPath); err != nil {
-		log.Fatalf("\n🚨 ERREUR FATALE (DÉMARRAGE STOPPÉ) 🚨\nJe ne trouve aucune page HTML dans : %s\nErreur technique : %v\n\n", pagesPath, err)
+		log.Fatalf("Erreur Pages HTML : %v\n", err)
 	}
 
-	// 3. Confirmation visuelle dans le terminal
-	fmt.Println("---------------------------------------------------")
-	fmt.Println("✅ SUCCÈS ! Les templates suivants sont chargés :")
-	for _, tmpl := range t.Templates() {
-		fmt.Println("   -", tmpl.Name())
-	}
-	fmt.Println("---------------------------------------------------")
-
-	// 4. Fonction pour afficher les pages
+	// 5. Fonction d'affichage
 	page := func(file string, active string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			data := map[string]interface{}{"Active": active}
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			if err := t.ExecuteTemplate(w, file, data); err != nil {
-				http.Error(w, "Erreur d'affichage : "+err.Error(), http.StatusInternalServerError)
-			}
+			t.ExecuteTemplate(w, file, data)
 		}
 	}
 
-	// 5. Routes
+	// 6. Routes des pages
 	mux.HandleFunc("/", page("index.html", "Accueil"))
 	mux.HandleFunc("/login", page("login.html", ""))
 	mux.HandleFunc("/register", page("register.html", ""))
@@ -70,8 +66,6 @@ func main() {
 	mux.HandleFunc("/reset-password", page("reset-password.html", ""))
 	mux.HandleFunc("/network", page("network.html", "Réseau"))
 	mux.HandleFunc("/settings", page("settings.html", "Paramètres"))
-
-	// 📍 LA NOUVELLE ROUTE DE LA CARTE EST INTÉGRÉE ICI 📍
 	mux.HandleFunc("/carte", page("carte.html", "Carte"))
 
 	mux.HandleFunc("/post/", func(w http.ResponseWriter, r *http.Request) {

@@ -1,6 +1,6 @@
 const API_BASE = window.location.hostname === 'localhost' 
     ? 'http://localhost:8081/api' 
-    : 'https://forum-zukuk.onrender.com/api'; // REMPLACE PAR TON VRAI LIEN RENDER
+    : '/api';// REMPLACE PAR TON VRAI LIEN RENDER
 let map, markers = [];
 let activities = [];
 let currentUser = null;
