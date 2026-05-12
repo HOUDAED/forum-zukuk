@@ -1,6 +1,7 @@
 const API_BASE = window.location.hostname === 'localhost' 
     ? 'http://localhost:8081/api' 
-    : '/api';// REMPLACE PAR TON VRAI LIEN RENDER
+    : '/api'; // RENDER LINK REVERSE PROXY
+
 let map, markers = [];
 let activities = [];
 let currentUser = null;
@@ -8,6 +9,7 @@ let selectedActivity = null;
 
 const qs = (s) => document.querySelector(s);
 
+// ── TOAST UNIVERSEL ────────────────────────────────────────────────────────
 function showToast(msg, isError = false) {
     const existing = document.getElementById('map-toast');
     if (existing) existing.remove();
@@ -25,21 +27,123 @@ function showToast(msg, isError = false) {
     }, 3500);
 }
 
+// ── MODALE DE CONFIRMATION ULTRA MODERNE ───────────────────────────────────
+function showConfirmModal(title, message, onConfirm) {
+    // Supprimer si elle existe déjà
+    const existing = document.getElementById('zukuk-confirm');
+    if (existing) existing.remove();
+
+    // Création de l'overlay (fond sombre flouté)
+    const overlay = document.createElement('div');
+    overlay.id = 'zukuk-confirm';
+    overlay.style.cssText = `
+        position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(8px);
+        z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;
+        opacity: 0; transition: opacity 0.3s ease;
+    `;
+
+    // Création de la boîte de dialogue
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        background: white; border-radius: 24px; padding: 32px; width: 100%; max-width: 400px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); transform: translateY(20px) scale(0.95);
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); text-align: center;
+    `;
+
+    modal.innerHTML = `
+        <div style="width: 64px; height: 64px; background: #fef2f2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" style="width: 32px; height: 32px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+        </div>
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin-bottom: 12px; font-family: 'Merriweather', serif;">${title}</h3>
+        <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 28px; line-height: 1.5;">${message}</p>
+        <div style="display: flex; gap: 12px;">
+            <button id="cancel-confirm" style="flex: 1; padding: 12px; border: 2px solid #e2e8f0; border-radius: 14px; background: white; color: #475569; font-weight: 600; cursor: pointer; transition: all 0.2s;">Annuler</button>
+            <button id="accept-confirm" style="flex: 1; padding: 12px; border: none; border-radius: 14px; background: #ef4444; color: white; font-weight: 600; cursor: pointer; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3); transition: all 0.2s;">Supprimer</button>
+        </div>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // Animation d'entrée
+    requestAnimationFrame(() => {
+        overlay.style.opacity = '1';
+        modal.style.transform = 'translateY(0) scale(1)';
+    });
+
+    // Fonction de fermeture
+    const close = () => {
+        overlay.style.opacity = '0';
+        modal.style.transform = 'translateY(20px) scale(0.95)';
+        setTimeout(() => overlay.remove(), 300);
+    };
+
+    // Événements
+    document.getElementById('cancel-confirm').onclick = close;
+    overlay.onclick = (e) => { if (e.target === overlay) close(); };
+    
+    document.getElementById('accept-confirm').onclick = () => {
+        close();
+        onConfirm(); // Exécute la fonction de suppression
+    };
+
+    // Effets de survol (Hover)
+    document.getElementById('cancel-confirm').onmouseover = function() { this.style.background = '#f8fafc'; };
+    document.getElementById('cancel-confirm').onmouseout = function() { this.style.background = 'white'; };
+    document.getElementById('accept-confirm').onmouseover = function() { this.style.background = '#dc2626'; };
+    document.getElementById('accept-confirm').onmouseout = function() { this.style.background = '#ef4444'; };
+}
+
+
+// ── STICKERS EMOJIS ────────────────────────────────────────────────────────
+function getMarkerIcon(categoryId) {
+    const emojis = { 1: '⚽', 2: '🧘', 3: '💬', 4: '🎨', 6: '🌿' };
+    const emoji = emojis[categoryId] || '📍';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
+        <circle cx="18" cy="18" r="16" fill="#ffffff" stroke="#818cf8" stroke-width="2.5"/>
+        <text x="18" y="23" font-size="18" text-anchor="middle" font-family="sans-serif">${emoji}</text>
+    </svg>`;
+    return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+}
+
+// ── LANCEMENT ──────────────────────────────────────────────────────────────
 async function bootstrap() {
     try {
         const res = await fetch(`${API_BASE}/me`, { credentials: 'include' });
         if (res.ok) currentUser = await res.json();
-    } catch (e) { console.warn("Invité"); }
+    } catch (e) { console.warn("Mode Invité"); }
 
     if (currentUser && qs('#created_by')) qs('#created_by').value = currentUser.id;
 
-    flatpickr("#schedule", {
-        enableTime: true, time_24hr: true, locale: "fr",
-        dateFormat: "Y-m-d\\TH:i", altInput: true, altFormat: "l j F Y à H:i", minDate: "today"
-    });
+    try {
+        flatpickr("#schedule", {
+            enableTime: true, 
+            time_24hr: true, 
+            locale: typeof flatpickr.l10ns.fr !== 'undefined' ? "fr" : "default",
+            dateFormat: "Y-m-d\\TH:i", 
+            altInput: true, 
+            altFormat: "l j F Y à H:i", 
+            minDate: "today"
+        });
+    } catch (err) {
+        console.error("Erreur chargement calendrier :", err);
+    }
 
-    const check = () => (window.google && google.maps && google.maps.places) ? init() : setTimeout(check, 100);
-    check();
+    let attempts = 0;
+    const checkGoogle = () => {
+        attempts++;
+        if (window.google && google.maps && google.maps.places) {
+            init();
+        } else if (attempts < 50) {
+            setTimeout(checkGoogle, 100);
+        } else {
+            console.error("Google Maps API n'a pas pu se charger.");
+            showToast("Erreur de chargement de la carte (Google Maps).", true);
+        }
+    };
+    checkGoogle();
 }
 
 function init() {
@@ -70,7 +174,6 @@ function initAutocomplete() {
     });
 }
 
-// 🔴 LE BOUCLIER ANTI-CRASH EST ICI (data || [])
 async function loadActivities() {
     try {
         const res = await fetch(`${API_BASE}/activities`, { credentials: 'include' });
@@ -89,7 +192,7 @@ function renderMarkers() {
     markers = activities.map(act => {
         const m = new google.maps.Marker({
             position: { lat: act.latitude, lng: act.longitude }, map,
-            icon: { path: google.maps.SymbolPath.CIRCLE, fillColor: '#818cf8', fillOpacity: 1, strokeWeight: 2, strokeColor: '#fff', scale: 10 }
+            icon: { url: getMarkerIcon(act.category_id), scaledSize: new google.maps.Size(36, 36) }
         });
         m.addListener('click', () => showCard(act));
         return m;
@@ -106,7 +209,6 @@ async function showCard(act) {
     try {
         const safeDateStr = act.schedule ? act.schedule.replace(' ', 'T') : '';
         const d = new Date(safeDateStr);
-        if (isNaN(d.getTime())) throw new Error();
         qs('#pc-schedule').textContent = `📅 ${d.toLocaleDateString('fr-FR', {weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'})}`;
     } catch (e) { qs('#pc-schedule').textContent = `📅 Date non définie`; }
 
@@ -117,9 +219,7 @@ async function showCard(act) {
     const joinBtn = qs('#join-btn');
     const deleteBtn = qs('#delete-act-btn');
 
-    // 🔴 SÉCURITÉ & PERMISSIONS
     if (currentUser && currentUser.id === act.created_by) {
-        // --- VUE CRÉATEUR ---
         if (deleteBtn) deleteBtn.style.display = 'block';
         if (joinBtn) joinBtn.style.display = 'none';
 
@@ -142,31 +242,22 @@ async function showCard(act) {
             } catch (err) { listContainer.innerHTML = ''; }
         }
     } else {
-        // --- VUE UTILISATEUR NORMAL ---
         if (deleteBtn) deleteBtn.style.display = 'none';
-        
         if (listContainer) {
-            listContainer.innerHTML = `<div style="display:flex; align-items:center; gap:8px; background:#f1f5f9; padding:8px 12px; border-radius:12px; width:100%;"><span>🔒</span><span style="font-size:0.8rem; color:#64748b;">Seul l'organisateur peut voir la liste des inscrits</span></div>`;
+            listContainer.innerHTML = `<div style="display:flex; align-items:center; gap:8px; background:#f1f5f9; padding:8px 12px; border-radius:12px; width:100%;"><span>🔒</span><span style="font-size:0.8rem; color:#64748b;">Seul l'organisateur peut voir les inscrits</span></div>`;
         }
 
         if (joinBtn) {
             joinBtn.style.display = 'block';
             if (act.is_participating) {
                 joinBtn.textContent = "Se désinscrire";
-                joinBtn.style.background = "#fef2f2";
-                joinBtn.style.color = "#ef4444";
-                joinBtn.disabled = false;
+                joinBtn.style.background = "#fef2f2"; joinBtn.style.color = "#ef4444"; joinBtn.disabled = false;
             } else if (isFull) {
-                // 🛑 GESTION COMPLET 🛑
                 joinBtn.textContent = "Complet 🛑";
-                joinBtn.style.background = "#e2e8f0";
-                joinBtn.style.color = "#64748b";
-                joinBtn.disabled = true;
+                joinBtn.style.background = "#e2e8f0"; joinBtn.style.color = "#64748b"; joinBtn.disabled = true;
             } else {
                 joinBtn.textContent = "S'inscrire";
-                joinBtn.style.background = "";
-                joinBtn.style.color = "";
-                joinBtn.disabled = false;
+                joinBtn.style.background = ""; joinBtn.style.color = ""; joinBtn.disabled = false;
             }
         }
     }
@@ -178,29 +269,13 @@ async function showCard(act) {
 
 function bindEvents() {
     const form = qs('#activity-form');
-    let msgDiv = qs('#form-msg');
     
-    const showMessage = (text, isError) => {
-        if(!msgDiv) return;
-        msgDiv.style.display = 'block';
-        msgDiv.textContent = text;
-        msgDiv.style.color = isError ? '#ef4444' : '#166534';
-        msgDiv.style.backgroundColor = isError ? '#fef2f2' : '#f0fdf4';
-        msgDiv.style.padding = '12px'; msgDiv.style.marginTop = '12px';
-        msgDiv.style.borderRadius = '12px'; msgDiv.style.border = `1px solid ${isError ? '#fecaca' : '#bbf7d0'}`;
-        msgDiv.style.fontWeight = '600'; msgDiv.style.fontSize = '0.9rem';
-    };
-
     if (form) {
-        const dateInput = qs('#schedule');
-        if (dateInput) dateInput.removeAttribute('required'); 
-
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (msgDiv) msgDiv.style.display = 'none';
 
             if (!currentUser) {
-                showMessage("🔒 Tu dois te connecter pour publier !", true);
+                showToast("🔒 Tu dois te connecter pour publier !", true);
                 setTimeout(() => window.location.href = "/login", 2000);
                 return;
             }
@@ -210,11 +285,9 @@ function bindEvents() {
 
             const fp = qs('#schedule')._flatpickr;
             let rawDate = "";
-            if (fp && fp.selectedDates.length > 0) {
-                rawDate = fp.formatDate(fp.selectedDates[0], "Y-m-d\\TH:i"); 
-            }
+            if (fp && fp.selectedDates.length > 0) rawDate = fp.formatDate(fp.selectedDates[0], "Y-m-d\\TH:i"); 
 
-            if (!rawDate) { showMessage("📅 N'oublie pas de choisir une date.", true); return; }
+            if (!rawDate) { showToast("📅 N'oublie pas de choisir une date.", true); return; }
             payload.schedule = rawDate;
             payload.category_id = parseInt(payload.category_id);
             payload.latitude = parseFloat(payload.latitude);
@@ -223,14 +296,13 @@ function bindEvents() {
             if (payload.created_by) payload.created_by = parseInt(payload.created_by);
 
             if (isNaN(payload.latitude) || isNaN(payload.longitude)) {
-                showMessage("📍 Clique bien sur l'adresse suggérée par Google.", true);
+                showToast("📍 Clique bien sur l'adresse suggérée par Google.", true);
                 return;
             }
 
             const btn = qs('#create-activity');
             const originalText = btn.textContent;
-            btn.textContent = "Publication...";
-            btn.disabled = true;
+            btn.textContent = "Publication..."; btn.disabled = true;
 
             try {
                 const res = await fetch(`${API_BASE}/activities`, {
@@ -243,97 +315,76 @@ function bindEvents() {
                     e.target.reset();
                     if(qs("#schedule")._flatpickr) qs("#schedule")._flatpickr.clear();
                     await loadActivities();
-                    showMessage("✨ Activité publiée avec succès sur la carte !", false);
+                    showToast("✨ Activité publiée avec succès sur la carte !", false);
                 } else {
-                    showMessage("Erreur du serveur (Déconnecté ?).", true);
+                    const errorData = await res.json();
+                    showToast(errorData.error || "Erreur du serveur.", true);
                 }
-            } catch (error) {
-                showMessage("Serveur injoignable.", true);
-            } finally {
-                btn.textContent = originalText;
-                btn.disabled = false;
-            }
+            } catch (error) { showToast("Serveur injoignable.", true); } 
+            finally { btn.textContent = originalText; btn.disabled = false; }
         });
     }
 
-    const closeBtn = qs('#close-card');
-    if (closeBtn) {
-        closeBtn.onclick = () => {
-            const card = qs('#place-card');
-            card.classList.remove('visible');
-            card.style.pointerEvents = 'none'; 
-            selectedActivity = null;
-        };
-    }
+    qs('#close-card').onclick = () => {
+        qs('#place-card').classList.remove('visible');
+        qs('#place-card').style.pointerEvents = 'none'; 
+        selectedActivity = null;
+    };
 
-    const joinBtn = qs('#join-btn');
-    if (joinBtn) {
-        joinBtn.onclick = async () => {
-            if (!currentUser) {
-                showToast("Tu dois te connecter pour participer.", true);
-                setTimeout(() => window.location.href = "/login", 1500);
-                return;
+    qs('#join-btn').onclick = async () => {
+        if (!currentUser) {
+            showToast("Tu dois te connecter pour participer.", true);
+            setTimeout(() => window.location.href = "/login", 1500); return;
+        }
+        if (!selectedActivity) return;
+
+        const joinBtn = qs('#join-btn');
+        const originalText = joinBtn.textContent;
+        joinBtn.disabled = true; joinBtn.textContent = "Chargement...";
+
+        try {
+            const res = await fetch(`${API_BASE}/activities/${selectedActivity.id}/join`, {
+                method: 'POST', credentials: 'include'
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.joined) showToast("✨ Parfait ! Tu es inscrit.", false);
+                else showToast("ℹ️ Tu t'es désinscrit.", false);
+                
+                selectedActivity.is_participating = data.joined;
+                selectedActivity.participants_count = data.count;
+                showCard(selectedActivity); 
+
+            } else { showToast("Action impossible.", true); joinBtn.textContent = originalText; }
+        } catch (err) { showToast("Erreur de connexion.", true); joinBtn.textContent = originalText; } 
+        finally { joinBtn.disabled = false; }
+    };
+
+    // 🔴 L'ANCIENNE ALERTE EST REMPLACÉE ICI
+    qs('#delete-act-btn').onclick = () => {
+        showConfirmModal(
+            "Supprimer l'activité ?",
+            "Cette action est irréversible. L'événement sera annulé et retiré de la carte pour tous les participants.",
+            async () => {
+                const deleteBtn = qs('#delete-act-btn');
+                deleteBtn.disabled = true; deleteBtn.textContent = "⏳";
+
+                try {
+                    const res = await fetch(`${API_BASE}/activities/${selectedActivity.id}`, {
+                        method: 'DELETE', credentials: 'include'
+                    });
+                    if (res.ok) {
+                        showToast("🗑️ Activité supprimée avec succès.", false);
+                        qs('#place-card').classList.remove('visible');
+                        await loadActivities(); 
+                    } else { showToast("Erreur lors de la suppression.", true); }
+                } catch (err) { showToast("Erreur serveur.", true); } 
+                finally { deleteBtn.disabled = false; deleteBtn.textContent = "🗑️"; }
             }
-            if (!selectedActivity) return;
-
-            const originalText = joinBtn.textContent;
-            joinBtn.disabled = true;
-            joinBtn.textContent = "Chargement...";
-
-            try {
-                const res = await fetch(`${API_BASE}/activities/${selectedActivity.id}/join`, {
-                    method: 'POST', credentials: 'include'
-                });
-
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.joined) showToast("✨ Parfait ! Tu es inscrit.", false);
-                    else showToast("ℹ️ Tu t'es désinscrit.", false);
-
-                    await loadActivities();
-                    const updatedAct = activities.find(a => a.id === selectedActivity.id);
-                    if (updatedAct) showCard(updatedAct);
-                } else {
-                    showToast("Action impossible.", true);
-                    joinBtn.textContent = originalText; 
-                }
-            } catch (err) {
-                showToast("Erreur de connexion.", true);
-                joinBtn.textContent = originalText; 
-            } finally {
-                joinBtn.disabled = false;
-            }
-        };
-    }
-
-    // 🔴 BOUTON SUPPRIMER (POUR LE CRÉATEUR)
-    const deleteBtn = qs('#delete-act-btn');
-    if (deleteBtn) {
-        deleteBtn.onclick = async () => {
-            if (!confirm("⚠️ Es-tu sûr de vouloir annuler et supprimer cette activité ?")) return;
-
-            deleteBtn.disabled = true;
-            deleteBtn.textContent = "⏳";
-
-            try {
-                const res = await fetch(`${API_BASE}/activities/${selectedActivity.id}`, {
-                    method: 'DELETE', credentials: 'include'
-                });
-                if (res.ok) {
-                    showToast("🗑️ Activité supprimée avec succès.", false);
-                    qs('#place-card').classList.remove('visible');
-                    await loadActivities(); // Recharge et efface le point
-                } else {
-                    showToast("Erreur lors de la suppression.", true);
-                }
-            } catch (err) {
-                showToast("Erreur serveur.", true);
-            } finally {
-                deleteBtn.disabled = false;
-                deleteBtn.textContent = "🗑️";
-            }
-        };
-    }
+        );
+    };
 }
 
-bootstrap();
+// 🔥 EXÉCUTION GARANTIE UNE FOIS LE HTML CHARGÉ
+document.addEventListener('DOMContentLoaded', bootstrap);

@@ -26,22 +26,17 @@ func main() {
 
 	// ── CORS (Version Ultra-Robuste) ────────────────────────────────────────
 	router.Use(func(c *gin.Context) {
-		// 1. On lit l'origine du navigateur qui fait la requête
 		reqOrigin := c.Request.Header.Get("Origin")
-		
-		// 2. Si l'origine existe, on l'autorise dynamiquement (parfait pour Render et Local)
 		if reqOrigin != "" {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", reqOrigin)
 		} else {
-			c.Writer.Header().Set("Access-Control-Allow-Origin", "*") // Fallback
+			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		}
 		
-		// 3. On autorise les cookies et les headers nécessaires
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
 
-		// 4. On gère les requêtes "Preflight" (OPTIONS) que le navigateur fait avant un POST
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
 			return
@@ -49,7 +44,6 @@ func main() {
 		c.Next()
 	})
 
-	// ── Static uploads ───────────────────────────────────────────────────────
 	router.Static("/uploads", filepath.Join("..", "database", "uploads"))
 
 	api := router.Group("/api")
@@ -67,29 +61,23 @@ func main() {
 
 	// ── Endpoints publics ────────────────────────────────────────────────────
 	api.GET("/health", handlers.Health)
-	api.GET("/board", handlers.GetBoardData) // rétrocompatibilité
+	api.GET("/board", handlers.GetBoardData)
 	api.GET("/quote", handlers.GetRandomQuote)
 	api.GET("/categories", handlers.GetCategories)
-
-	// Posts (lecture publique)
 	api.GET("/posts", handlers.GetPosts)
 	api.GET("/posts/:id", handlers.GetPost)
-
-	// Réseau / profils publics
 	api.GET("/network", handlers.GetNetwork)
 	api.GET("/network/:id", handlers.GetPublicProfile)
-
-	// Rétrocompatibilité board.js v1
 	api.GET("/discussion/:id", handlers.GetDiscussionByID)
 
-	// 📍 CARTE : Lecture publique des activités (gin.WrapF adapte la fonction standard pour Gin)
-	api.GET("/activities", gin.WrapF(handlers.GetActivitiesHandler))
+	// 📍 CARTE : Lecture publique des activités (Maintenant en standard Gin)
+	api.GET("/activities", handlers.GetActivitiesHandler)
 
 	// ── Endpoints protégés ───────────────────────────────────────────────────
 	protected := api.Group("/")
 	protected.Use(middleware.RequireAuth())
 	{
-		// ── Profil ─────────────────────────────────────────────────────────
+		// Profil & Posts...
 		protected.GET("/me", handlers.GetMe)
 		protected.PUT("/me", handlers.UpdateProfile)
 		protected.DELETE("/me", handlers.DeleteAccount)
@@ -98,46 +86,39 @@ func main() {
 		protected.GET("/me/connections", handlers.GetConnectionHistory)
 		protected.POST("/me/pause", handlers.PauseAccount)
 
-		// ── Humeur ─────────────────────────────────────────────────────────
-		protected.POST("/mood", handlers.UpdateMood)               // enregistre + persiste
-		protected.GET("/me/mood-history", handlers.GetMoodHistory) // 30 derniers jours
-		protected.GET("/me/mood-stats", handlers.GetMoodStats)     // répartition 30 jours
+		protected.POST("/mood", handlers.UpdateMood)
+		protected.GET("/me/mood-history", handlers.GetMoodHistory)
+		protected.GET("/me/mood-stats", handlers.GetMoodStats)
 
-		// ── Posts CRUD ─────────────────────────────────────────────────────
 		protected.POST("/posts", handlers.CreatePost)
 		protected.PUT("/posts/:id", handlers.UpdatePost)
 		protected.DELETE("/posts/:id", handlers.DeletePost)
-
-		// Like toggle + vérification
 		protected.POST("/posts/:id/like", handlers.ToggleLike)
 		protected.GET("/posts/:id/liked", handlers.GetLikeStatus)
-
-		// ── Commentaires ───────────────────────────────────────────────────
 		protected.POST("/posts/:id/comments", handlers.AddComment)
 		protected.PUT("/comments/:id", handlers.UpdateComment)
 		protected.DELETE("/comments/:id", handlers.DeleteComment)
 
-		// ── Notifications ──────────────────────────────────────────────────
 		protected.GET("/notifications", handlers.GetNotifications)
 		protected.POST("/notifications/read", handlers.MarkNotificationsRead)
-
-		// Rétrocompatibilité like board.js v1
 		protected.POST("/discussion/:id/like", handlers.LikeDiscussion)
 		protected.GET("/me/dashboard-stats", handlers.GetUserDashboardStats)
 
-		// 📍 CARTE : Création et Inscription (Protégé par l'authentification Gin)
-		protected.POST("/activities", gin.WrapF(handlers.CreateActivityHandler))
-		protected.POST("/activities/:id/join", gin.WrapF(handlers.ToggleJoinHandler))
+		// 📍 CARTE : Routes protégées (Création, Inscription, Suppression, Liste Inscrits)
+		protected.POST("/activities", handlers.CreateActivityHandler)
+		protected.POST("/activities/:id/join", handlers.ToggleJoinHandler)
+		protected.DELETE("/activities/:id", handlers.DeleteActivityHandler)
+		protected.GET("/activities/:id/participants", handlers.GetActivityParticipantsHandler)
 
-		// ── Paramètres Zukuk ───────────────────────────────────────────────
+		// Paramètres...
 		settings := protected.Group("/settings")
 		{
-			settings.GET("/", handlers.GetSettings)                   // Récupérer les préférences
-			settings.PUT("/", handlers.UpdateSettings)                // Sauvegarder les préférences
-			settings.GET("/sessions", handlers.GetSessions)           // Voir les connexions actives
-			settings.POST("/sessions/revoke", handlers.RevokeAllSessions) // Déconnecter les autres
-			settings.GET("/export", handlers.ExportMyData)            // Téléchargement RGPD
-			settings.POST("/pause", handlers.PauseAccount)            // Alias pour la Digital Detox
+			settings.GET("/", handlers.GetSettings)
+			settings.PUT("/", handlers.UpdateSettings)
+			settings.GET("/sessions", handlers.GetSessions)
+			settings.POST("/sessions/revoke", handlers.RevokeAllSessions)
+			settings.GET("/export", handlers.ExportMyData)
+			settings.POST("/pause", handlers.PauseAccount)
 		}
 	}
 

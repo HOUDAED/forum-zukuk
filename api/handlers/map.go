@@ -1,11 +1,11 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
-	"github.com/gorilla/mux"
+
+	"github.com/gin-gonic/gin"
 	"forum-zukuk/database"
 )
 
@@ -23,18 +23,36 @@ type Activity struct {
 	MaxPlaces         int     `json:"max_places"`
 	CreatedAt         string  `json:"created_at"`
 	ParticipantsCount int     `json:"participants_count"`
-	IsParticipating   bool    `json:"is_participating"` // 🔴 LE NOM EXACT
+	IsParticipating   bool    `json:"is_participating"`
 }
 
-// GetActivitiesHandler récupère les lieux
-func GetActivitiesHandler(w http.ResponseWriter, r *http.Request) {
-	userID := getCurrentUserID(r)
+type Participant struct {
+	Pseudo    string `json:"pseudo"`
+	AvatarURL string `json:"avatar_url"`
+}
 
-	// 1. On récupère la date et l'heure exactes d'aujourd'hui, au même format que ta BDD (ex: 2026-05-11T20:00)
+// ── UTILITAIRE ──────────────────────────────────────────────────────────
+func getCurrentUserIDForMap(c *gin.Context) int64 {
+	for _, cookie := range c.Request.Cookies() {
+		var userID int64
+		err := database.ZUKUKDB.QueryRow(`
+			SELECT user_id FROM sessions 
+			WHERE token = ? AND expires_at > CURRENT_TIMESTAMP`, 
+			cookie.Value,
+		).Scan(&userID)
+		
+		if err == nil && userID > 0 {
+			return userID
+		}
+	}
+	return 0
+}
+
+// ── HANDLERS ────────────────────────────────────────────────────────────
+func GetActivitiesHandler(c *gin.Context) {
+	userID := getCurrentUserIDForMap(c)
 	now := time.Now().Format("2006-01-02T15:04")
 
-	// 2. 🔴 LE FILTRE MAGIQUE : "WHERE a.schedule >= ?" permet de zapper le passé
-	// Et "ORDER BY a.schedule ASC" trie du plus imminent au plus lointain !
 	query := `
 		SELECT a.id, a.created_by, a.category_id, a.name, a.description, a.address, 
 		       a.latitude, a.longitude, a.schedule, a.rating, a.max_places, a.created_at,
@@ -44,11 +62,9 @@ func GetActivitiesHandler(w http.ResponseWriter, r *http.Request) {
 		WHERE a.schedule >= ? 
 		ORDER BY a.schedule ASC`
 
-	// On passe 'now' dans la requête pour remplacer le deuxième point d'interrogation
 	rows, err := database.ZUKUKDB.Query(query, userID, now)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Erreur lors du chargement de la carte."})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors du chargement de la carte."})
 		return
 	}
 	defer rows.Close()
@@ -62,25 +78,22 @@ func GetActivitiesHandler(w http.ResponseWriter, r *http.Request) {
 		list = append(list, a)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(list)
+	if list == nil {
+		list = []Activity{}
+	}
+	c.JSON(http.StatusOK, list)
 }
 
-// CreateActivityHandler insère une nouvelle activité
-func CreateActivityHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	
+func CreateActivityHandler(c *gin.Context) {
 	var a Activity
-	if err := json.NewDecoder(r.Body).Decode(&a); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Vérifie tes informations. L'adresse doit être sélectionnée dans la liste Google."})
+	if err := c.ShouldBindJSON(&a); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Vérifie tes informations. L'adresse doit être sélectionnée dans la liste Google."})
 		return
 	}
 
-	userID := getCurrentUserID(r)
+	userID := getCurrentUserIDForMap(c)
 	if userID == 0 {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Tu dois te connecter pour publier une activité."})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Tu dois te connecter pour publier une activité."})
 		return
 	}
 
@@ -89,27 +102,21 @@ func CreateActivityHandler(w http.ResponseWriter, r *http.Request) {
 	
 	res, err := database.ZUKUKDB.Exec(query, userID, a.CategoryID, a.Name, a.Description, a.Address, a.Latitude, a.Longitude, a.Schedule, a.MaxPlaces)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Erreur du serveur lors de la sauvegarde."})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur du serveur lors de la sauvegarde."})
 		return
 	}
 
 	id, _ := res.LastInsertId()
 	a.ID = id
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(a)
+	c.JSON(http.StatusCreated, a)
 }
 
-// ToggleJoinHandler gère l'inscription et la désinscription
-func ToggleJoinHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	vars := mux.Vars(r)
-	actID, _ := strconv.ParseInt(vars["id"], 10, 64)
-	userID := getCurrentUserID(r)
+func ToggleJoinHandler(c *gin.Context) {
+	actID, _ := strconv.ParseInt(c.Param("id"), 10, 64)
+	userID := getCurrentUserIDForMap(c)
 
 	if userID == 0 {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Tu dois te connecter pour t'inscrire."})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Tu dois te connecter pour t'inscrire."})
 		return
 	}
 
@@ -125,61 +132,26 @@ func ToggleJoinHandler(w http.ResponseWriter, r *http.Request) {
 	var count int
 	database.ZUKUKDB.QueryRow("SELECT COUNT(*) FROM activity_participants WHERE activity_id=?", actID).Scan(&count)
 
-	json.NewEncoder(w).Encode(map[string]interface{}{"joined": !exists, "count": count})
+	c.JSON(http.StatusOK, gin.H{"joined": !exists, "count": count})
 }
 
-func getCurrentUserID(r *http.Request) int64 {
-	// On boucle sur tous les cookies pour trouver le jeton de session Zukuk valide, 
-	// peu importe son nom ("session", "token", etc.)
-	for _, cookie := range r.Cookies() {
-		var userID int64
-		// On interroge ta vraie table `sessions` (définie dans db.go)
-		err := database.ZUKUKDB.QueryRow(`
-			SELECT user_id FROM sessions 
-			WHERE token = ? AND expires_at > CURRENT_TIMESTAMP`, 
-			cookie.Value,
-		).Scan(&userID)
-		
-		if err == nil && userID > 0 {
-			return userID // Succès : L'utilisateur est identifié !
-		}
-	}
-	return 0 // Non connecté
-}
-// Participant définit la structure des données renvoyées pour chaque inscrit
-type Participant struct {
-	Pseudo    string `json:"pseudo"`
-	AvatarURL string `json:"avatar_url"`
-}
-
-// GetActivityParticipantsHandler permet au créateur de voir ses inscrits
-func GetActivityParticipantsHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	
-	// 1. Récupérer l'ID de l'utilisateur qui fait la requête
-	userID := getCurrentUserID(r)
+func GetActivityParticipantsHandler(c *gin.Context) {
+	userID := getCurrentUserIDForMap(c)
 	if userID == 0 {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Connexion requise"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Connexion requise"})
 		return
 	}
 
-	// 2. Récupérer l'ID de l'activité depuis l'URL
-	vars := mux.Vars(r)
-	actID, _ := strconv.ParseInt(vars["id"], 10, 64)
+	actID, _ := strconv.ParseInt(c.Param("id"), 10, 64)
 
-	// 3. VÉRIFICATION DE SÉCURITÉ : Est-ce le créateur ?
 	var creatorID int64
 	err := database.ZUKUKDB.QueryRow("SELECT created_by FROM activities WHERE id = ?", actID).Scan(&creatorID)
 	
 	if err != nil || creatorID != userID {
-		// On renvoie une erreur 403 (Interdit) si ce n'est pas son activité
-		w.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Seul l'organisateur peut voir la liste."})
+		c.JSON(http.StatusForbidden, gin.H{"error": "Seul l'organisateur peut voir la liste."})
 		return
 	}
 
-	// 4. Si c'est le bon créateur, on récupère les participants
 	query := `
 		SELECT u.pseudo, u.avatar_url 
 		FROM users u
@@ -189,7 +161,7 @@ func GetActivityParticipantsHandler(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := database.ZUKUKDB.Query(query, actID)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur SQL"})
 		return
 	}
 	defer rows.Close()
@@ -201,33 +173,28 @@ func GetActivityParticipantsHandler(w http.ResponseWriter, r *http.Request) {
 		list = append(list, p)
 	}
     
-	if list == nil { list = []Participant{} }
-	json.NewEncoder(w).Encode(list)
+	if list == nil { 
+		list = []Participant{} 
+	}
+	c.JSON(http.StatusOK, list)
 }
 
-// DeleteActivityHandler permet au créateur d'annuler son activité
-func DeleteActivityHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	userID := getCurrentUserID(r)
+func DeleteActivityHandler(c *gin.Context) {
+	userID := getCurrentUserIDForMap(c)
 	if userID == 0 {
-		w.WriteHeader(http.StatusUnauthorized)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Non autorisé"})
 		return
 	}
 
-	vars := mux.Vars(r)
-	actID, _ := strconv.ParseInt(vars["id"], 10, 64)
+	actID, _ := strconv.ParseInt(c.Param("id"), 10, 64)
 
-	// Sécurité : On vérifie que c'est bien son activité
 	var creatorID int64
 	err := database.ZUKUKDB.QueryRow("SELECT created_by FROM activities WHERE id = ?", actID).Scan(&creatorID)
 	if err != nil || creatorID != userID {
-		w.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Non autorisé."})
+		c.JSON(http.StatusForbidden, gin.H{"error": "Non autorisé."})
 		return
 	}
 
-	// Suppression définitive
 	database.ZUKUKDB.Exec("DELETE FROM activities WHERE id = ?", actID)
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Supprimée"})
+	c.JSON(http.StatusOK, gin.H{"message": "Supprimée"})
 }
