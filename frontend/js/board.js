@@ -1,4 +1,4 @@
-// Board JavaScript - Frontend Logic (v2 – posts réels + recherche + mode invité + PAGINATION + TOASTS)
+// Board JavaScript - Frontend Logic (Couleurs originales + Mode Anonyme Auto)
 const API_BASE = '/api';
 
 // ─── UI : TOAST & MODALE DE CONFIRMATION ────────────────────────────────────
@@ -13,85 +13,42 @@ function showToast(msg, isError = false) {
     document.body.appendChild(toast);
     
     requestAnimationFrame(() => toast.style.transform = 'translateX(-50%) translateY(0)');
-    setTimeout(() => {
-        toast.style.transform = 'translateX(-50%) translateY(100px)';
-        setTimeout(() => toast.remove(), 400);
-    }, 3500);
+    setTimeout(() => { toast.style.transform = 'translateX(-50%) translateY(100px)'; setTimeout(() => toast.remove(), 400); }, 3500);
 }
 
 function showConfirmModal(title, message, onConfirm) {
     const existing = document.getElementById('zukuk-confirm');
     if (existing) existing.remove();
-
     const overlay = document.createElement('div');
     overlay.id = 'zukuk-confirm';
-    overlay.style.cssText = `
-        position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(8px);
-        z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;
-        opacity: 0; transition: opacity 0.3s ease;
-    `;
-
+    overlay.style.cssText = `position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(8px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; transition: opacity 0.3s ease;`;
     const modal = document.createElement('div');
-    modal.style.cssText = `
-        background: white; border-radius: 24px; padding: 32px; width: 100%; max-width: 400px;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); transform: translateY(20px) scale(0.95);
-        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); text-align: center;
-    `;
-
+    modal.style.cssText = `background: white; border-radius: 24px; padding: 32px; width: 100%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); transform: translateY(20px) scale(0.95); transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); text-align: center;`;
     modal.innerHTML = `
         <div style="width: 64px; height: 64px; background: #fef2f2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" style="width: 32px; height: 32px;">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" style="width: 32px; height: 32px;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
         </div>
-        <h3 style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin-bottom: 12px; font-family: 'Merriweather', serif;">${title}</h3>
-        <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 28px; line-height: 1.5;">${message}</p>
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin-bottom: 12px;">${title}</h3>
+        <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 28px;">${message}</p>
         <div style="display: flex; gap: 12px;">
-            <button id="cancel-confirm" style="flex: 1; padding: 12px; border: 2px solid #e2e8f0; border-radius: 14px; background: white; color: #475569; font-weight: 600; cursor: pointer; transition: all 0.2s;">Annuler</button>
-            <button id="accept-confirm" style="flex: 1; padding: 12px; border: none; border-radius: 14px; background: #ef4444; color: white; font-weight: 600; cursor: pointer; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3); transition: all 0.2s;">Supprimer</button>
+            <button id="cancel-confirm" style="flex: 1; padding: 12px; border: 2px solid #e2e8f0; border-radius: 14px; background: white; color: #475569; font-weight: 600; cursor: pointer;">Annuler</button>
+            <button id="accept-confirm" style="flex: 1; padding: 12px; border: none; border-radius: 14px; background: #ef4444; color: white; font-weight: 600; cursor: pointer;">Supprimer</button>
         </div>
     `;
-
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
-
-    requestAnimationFrame(() => {
-        overlay.style.opacity = '1';
-        modal.style.transform = 'translateY(0) scale(1)';
-    });
-
-    const close = () => {
-        overlay.style.opacity = '0';
-        modal.style.transform = 'translateY(20px) scale(0.95)';
-        setTimeout(() => overlay.remove(), 300);
-    };
-
+    requestAnimationFrame(() => { overlay.style.opacity = '1'; modal.style.transform = 'translateY(0) scale(1)'; });
+    const close = () => { overlay.style.opacity = '0'; modal.style.transform = 'translateY(20px) scale(0.95)'; setTimeout(() => overlay.remove(), 300); };
     document.getElementById('cancel-confirm').onclick = close;
     overlay.onclick = (e) => { if (e.target === overlay) close(); };
     document.getElementById('accept-confirm').onclick = () => { close(); onConfirm(); };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 🎨 SYSTÈME DE THÈME GLOBAL ZUKUK
-// ─────────────────────────────────────────────────────────────────────────────
-
+// 1. Anti-scintillement pour le thème clair/sombre
 const savedTheme = localStorage.getItem('zukuk_theme') || 'light';
 document.body.setAttribute('data-theme', savedTheme);
 
-document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        const res = await fetch(`${API_BASE}/settings/`, { credentials: 'include' });
-        if (res.ok) {
-            const settings = await res.json();
-            if (settings.theme && settings.theme !== savedTheme) {
-                document.body.setAttribute('data-theme', settings.theme);
-                localStorage.setItem('zukuk_theme', settings.theme);
-            }
-        }
-    } catch (e) {}
-});
-
-// ── DOM refs ──────────────────────────────────────────────────────────────────
+// ── DOM refs & États globaux ──────────────────────────────────────────────────
 const moodGrid       = document.getElementById('moodGrid');
 const statsSection   = document.getElementById('statsSection');
 const discussionsList = document.getElementById('discussionsList');
@@ -106,12 +63,25 @@ const newPostBtn     = document.getElementById('newPostBtn');
 
 let currentMood   = 'Calme';
 let currentUser   = null;
+let userSettings  = null; // 🔴 Récupère les paramètres (dont Anonyme par défaut)
 let searchTimer   = null;
 let currentOffset = 0; 
 const POSTS_PER_PAGE = 20;
 const fetchOpts = { credentials: 'include' };
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Récupération des paramètres en priorité
+  try {
+      const res = await fetch(`${API_BASE}/settings/`, fetchOpts);
+      if (res.ok) {
+          userSettings = await res.json();
+          if (userSettings.theme && userSettings.theme !== savedTheme) {
+              document.body.setAttribute('data-theme', userSettings.theme);
+              localStorage.setItem('zukuk_theme', userSettings.theme);
+          }
+      }
+  } catch (e) {}
+
   await checkAuth();
   updateGreeting();
   renderMoodsLocal();
@@ -163,12 +133,7 @@ async function loadPosts(append = false) {
   }
 }
 
-const TAG_COLORS = {
-  'Stress': 'tag-stress', 'Anxiété': 'tag-stress',
-  'Bien-être': 'tag-wellbeing', 'Sport': 'tag-wellbeing', 'Santé mentale': 'tag-wellbeing',
-  'Solitude': 'tag-loneliness', 'Relations': 'tag-loneliness',
-};
-
+const TAG_COLORS = { 'Stress': 'tag-stress', 'Anxiété': 'tag-stress', 'Bien-être': 'tag-wellbeing', 'Sport': 'tag-wellbeing', 'Santé mentale': 'tag-wellbeing', 'Solitude': 'tag-loneliness', 'Relations': 'tag-loneliness'};
 function tagClass(cat) { return TAG_COLORS[cat] || 'tag-stress'; }
 
 function timeAgo(dateStr) {
@@ -199,22 +164,20 @@ function renderPosts(posts, append = false) {
 
     const isOwner = currentUser && currentUser.id === post.user_id;
     const ownerActions = isOwner ? `
-      <button class="discussion-action edit-post" data-id="${post.id}" title="Modifier">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-      </button>
-      <button class="discussion-action delete-post" data-id="${post.id}" title="Supprimer">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6M14 11v6"></path><path d="M9 6V4h6v2"></path></svg>
-      </button>` : '';
+      <button class="discussion-action edit-post" data-id="${post.id}" title="Modifier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+      <button class="discussion-action delete-post" data-id="${post.id}" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6M14 11v6"></path><path d="M9 6V4h6v2"></path></svg></button>` : '';
+
+    const avatar = post.avatar_url || '';
 
     card.innerHTML = `
       <div class="discussion-header">
         <div class="discussion-avatar">
-          ${post.avatar_url
-            ? `<img src="${post.avatar_url.startsWith('http') ? post.avatar_url : (window.location.hostname === 'localhost' ? 'http://localhost:8081' : '') + post.avatar_url}" style="width:40px;height:40px;border-radius:50%;object-fit:cover" alt="avatar">`
+          ${avatar
+            ? `<img src="${avatar}" style="width:40px;height:40px;border-radius:50%;object-fit:cover" alt="avatar">`
             : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`}
         </div>
         <div class="discussion-author-info">
-          <span class="discussion-author">${escHtml(post.author)}</span>
+          <span class="discussion-author">${escHtml(post.author || 'Anonyme')}</span>
           <span class="discussion-time">• ${timeAgo(post.created_at)}</span>
         </div>
       </div>
@@ -261,9 +224,7 @@ function renderPosts(posts, append = false) {
 }
 
 function renderPostsLocal() {
-  const mock = [
-    { id:1, author:'Marie_123', created_at: new Date(Date.now()-7200000).toISOString(), title:"J'ai du mal à gérer mon stress au travail", content:"Depuis quelques semaines...", category:'Stress', likes_count:12, comments_count:8, user_id:-1, avatar_url:'' }
-  ];
+  const mock = [{ id:1, author:'Marie_123', created_at: new Date(Date.now()-7200000).toISOString(), title:"J'ai du mal à gérer mon stress au travail", content:"Depuis quelques semaines...", category:'Stress', likes_count:12, comments_count:8, user_id:-1, avatar_url:'' }];
   renderPosts(mock, false);
 }
 
@@ -275,7 +236,7 @@ async function toggleLike(postId, btn) {
       btn.querySelector('span').textContent = data.count;
       btn.style.color = data.liked ? '#ff5722' : '';
     }
-  } catch (err) { console.error(err); }
+  } catch (err) {}
 }
 
 let categories = [];
@@ -290,25 +251,37 @@ function buildCategoryOptions(selectedId) {
   return categories.map(c => `<option value="${c.id}"${c.id===selectedId?' selected':''}>${escHtml(c.name)}</option>`).join('');
 }
 
-// 🔴 ICI : REMPLACEMENT DE L'ALERTE POUR LA CRÉATION DE POST
+// 🔴 MODALE DE CRÉATION : Avec Anonymat Automatique
 function openNewPostModal() {
   if (!currentUser) { showAuthToast(); return; }
   fetchCategories().then(() => {
+      
+    const isAnon = userSettings && userSettings.anon_by_default;
+    const cbBg = isAnon ? '#818cf8' : 'white';
+    const cbBorder = isAnon ? '#818cf8' : '#e2e8f0';
+    const svgOpacity = isAnon ? '1' : '0';
+
     showModal('Nouveau post',
       `<div class="modal-field"><label>Titre</label><input id="m-title" class="modern-input" placeholder="Titre de ta discussion"></div>
        <div class="modal-field"><label>Contenu</label><textarea id="m-content" class="modern-input" rows="5" placeholder="Partage ta pensée..."></textarea></div>
        <div class="modal-field"><label>Catégorie</label><select id="m-cat" class="modern-input"><option value="">-- Choisir --</option>${buildCategoryOptions(null)}</select></div>
-       <label class="checkbox-label" style="margin-top:8px">
-         <input type="checkbox" id="m-anon"><div class="custom-checkbox"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+       <label class="checkbox-label" style="margin-top:8px; display:flex; align-items:center; gap:8px; cursor:pointer;">
+         <input type="checkbox" id="m-anon" style="display:none;" ${isAnon ? 'checked' : ''}>
+         <div class="custom-checkbox" style="width:18px; height:18px; border-radius:6px; border:2px solid ${cbBorder}; background:${cbBg}; display:flex; align-items:center; justify-content:center; transition:all 0.2s;">
+             <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:12px; height:12px; opacity:${svgOpacity}; transition:opacity 0.2s;">
+                 <polyline points="20 6 9 17 4 12"></polyline>
+             </svg>
+         </div>
          Poster anonymement
        </label>`,
       async () => {
         const title   = document.getElementById('m-title').value.trim();
         const content = document.getElementById('m-content').value.trim();
         const catId   = document.getElementById('m-cat').value || null;
+        
+        // Lecture parfaite de la case "Anonyme"
         const anon    = document.getElementById('m-anon').checked ? 1 : 0;
 
-        // Pré-validation Frontend avec Toast
         if (title.length < 3) { showToast("Le titre doit faire au moins 3 caractères.", true); return; }
         if (content.length < 10) { showToast("Le contenu doit faire au moins 10 caractères.", true); return; }
 
@@ -319,32 +292,21 @@ function openNewPostModal() {
 
         try {
             const res = await fetch(`${API_BASE}/posts`, {
-              method:'POST', credentials:'include',
-              headers:{'Content-Type':'application/json'},
+              method:'POST', credentials:'include', headers:{'Content-Type':'application/json'},
               body: JSON.stringify({ title, content, category_id: catId ? parseInt(catId) : null, is_anonymous: anon }),
             });
             const data = await res.json();
             
-            if (!res.ok) { 
-                showToast(data.error || "Erreur serveur.", true); 
-                btn.textContent = originalText;
-                btn.disabled = false;
-                return; 
-            }
+            if (!res.ok) { showToast(data.error || "Erreur serveur.", true); btn.textContent = originalText; btn.disabled = false; return; }
             closeModal();
             showToast("✨ Post publié avec succès !", false);
             setTimeout(() => window.location.href = `/post/${data.id}`, 1000);
-        } catch (err) {
-            showToast("Serveur injoignable.", true);
-            btn.textContent = originalText;
-            btn.disabled = false;
-        }
+        } catch (err) { showToast("Serveur injoignable.", true); btn.textContent = originalText; btn.disabled = false; }
       }
     );
   });
 }
 
-// 🔴 ICI : REMPLACEMENT DE L'ALERTE POUR LA MODIFICATION
 function openEditPostModal(post) {
   fetchCategories().then(() => {
     showModal('Modifier le post',
@@ -353,63 +315,37 @@ function openEditPostModal(post) {
       async () => {
         const title   = document.getElementById('m-title').value.trim();
         const content = document.getElementById('m-content').value.trim();
-        
-        if (title.length < 3) { showToast("Le titre doit faire au moins 3 caractères.", true); return; }
-        if (content.length < 10) { showToast("Le contenu doit faire au moins 10 caractères.", true); return; }
+        if (title.length < 3) { showToast("Contenu trop court.", true); return; }
 
         const btn = document.getElementById('modalConfirm');
-        const originalText = btn.textContent;
-        btn.textContent = "Sauvegarde...";
-        btn.disabled = true;
+        btn.textContent = "Sauvegarde..."; btn.disabled = true;
 
         try {
             const res = await fetch(`${API_BASE}/posts/${post.id}`, {
-              method:'PUT', credentials:'include',
-              headers:{'Content-Type':'application/json'},
-              body: JSON.stringify({ title, content }),
+              method:'PUT', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title, content }),
             });
-            const data = await res.json();
-            
-            if (!res.ok) { 
-                showToast(data.error || "Erreur serveur.", true); 
-                btn.textContent = originalText;
-                btn.disabled = false;
-                return; 
-            }
-            closeModal();
-            showToast("✏️ Modification enregistrée !", false);
-            loadPosts(false);
-        } catch (err) {
-            showToast("Serveur injoignable.", true);
-            btn.textContent = originalText;
-            btn.disabled = false;
-        }
+            if (!res.ok) { showToast("Erreur serveur.", true); btn.textContent = "Enregistrer"; btn.disabled = false; return; }
+            closeModal(); showToast("✏️ Modification enregistrée !", false); loadPosts(false);
+        } catch (err) { showToast("Serveur injoignable.", true); btn.textContent = "Enregistrer"; btn.disabled = false; }
       }
     );
   });
 }
 
-// 🔴 ICI : REMPLACEMENT DU "CONFIRM" PAR LA MODALE ÉLÉGANTE
 async function deletePost(postId, card) {
-    showConfirmModal(
-        "Supprimer la discussion ?",
-        "Cette action est irréversible. Le post et tous ses commentaires seront effacés pour tout le monde.",
-        async () => {
-            try {
-                const res = await fetch(`${API_BASE}/posts/${postId}`, { method:'DELETE', credentials:'include' });
-                if (res.ok) {
-                    showToast("🗑️ Discussion supprimée.", false);
-                    card.style.opacity = '0';
-                    card.style.transform = 'translateY(-10px)';
-                    setTimeout(() => card.remove(), 300);
-                } else {
-                    showToast("Erreur lors de la suppression.", true);
-                }
-            } catch (err) { showToast("Erreur serveur.", true); }
-        }
-    );
+    showConfirmModal("Supprimer la discussion ?", "Cette action est irréversible.", async () => {
+        try {
+            const res = await fetch(`${API_BASE}/posts/${postId}`, { method:'DELETE', credentials:'include' });
+            if (res.ok) {
+                showToast("🗑️ Discussion supprimée.", false);
+                card.style.opacity = '0'; card.style.transform = 'translateY(-10px)';
+                setTimeout(() => card.remove(), 300);
+            } else { showToast("Erreur lors de la suppression.", true); }
+        } catch (err) { showToast("Erreur serveur.", true); }
+    });
 }
 
+// ── FONCTION RESTAURÉE : DÉGRADÉS D'HUMEUR ──────────────────────────────────
 function renderMoodsLocal() {
   const moods = [{ name:'Bien', emoji:'😊' }, { name:'Calme', emoji:'😌' }, { name:'Triste', emoji:'😢' }, { name:'Anxieux', emoji:'😰' }, { name:'Colère', emoji:'😡' }];
   moodGrid.innerHTML = '';
@@ -419,31 +355,36 @@ function renderMoodsLocal() {
     btn.innerHTML = `<span class="mood-emoji">${mood.emoji}</span><span class="mood-name">${mood.name}</span>`;
     btn.addEventListener('click', () => {
       if (!currentUser) { showAuthToast(); return; }
-      selectMood(mood.name);
-      saveMood(mood);
+      selectMood(mood.name); saveMood(mood);
     });
     moodGrid.appendChild(btn);
   });
 }
 
+// 🔴 LE RETOUR DE LA COULEUR : Voici la fonction originale intacte
 function selectMood(name) {
   currentMood = name;
   document.querySelectorAll('.mood-button').forEach(b => b.classList.toggle('active', b.textContent.includes(name)));
+  
   const colors = {
     'Bien':    'linear-gradient(135deg,#fdf4ff 0%,#fae8ff 50%,#fce7f3 100%)',
     'Calme':   'linear-gradient(135deg,#f0fdf4 0%,#dcfce7 50%,#e0f2fe 100%)',
     'Triste':  'linear-gradient(135deg,#eff6ff 0%,#dbeafe 50%,#e0e7ff 100%)',
     'Anxieux': 'linear-gradient(135deg,#f8fafc 0%,#f1f5f9 50%,#e2e8f0 100%)',
-    'Colère':  'linear-gradient(135deg, #FFE5E5 0%, #FFC8C8 50%, #FF9F9F 100%)',
+    'Colère':  'linear-gradient(135deg,#fff7ed 0%,#ffedd5 50%,#fef08a 100%)',
   };
+  
   const bg = document.querySelector('.background-gradient');
-  if (bg) { bg.style.transition = 'background 1.5s ease-in-out'; bg.style.background = colors[name] || colors['Calme']; }
-  document.body.dataset.mood = name.toLowerCase();
+  if (bg) { 
+      bg.style.transition = 'background 1.5s ease-in-out'; 
+      bg.style.background = colors[name] || colors['Calme']; 
+  }
+  
+  const normalizedMood = name.toLowerCase().replace('è', 'e');
+  document.body.setAttribute('data-mood', normalizedMood);
 }
 
-async function saveMood(mood) {
-  try { await fetch(`${API_BASE}/mood`, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify(mood) }); } catch (_) {}
-}
+async function saveMood(mood) { try { await fetch(`${API_BASE}/mood`, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify(mood) }); } catch (_) {} }
 
 function renderStatsLocal() {
   statsSection.innerHTML = '';
@@ -460,14 +401,10 @@ async function fetchRandomQuote() {
     const res = await fetch(`${API_BASE}/quote`, fetchOpts);
     const data = await res.json();
     displayQuote(data.quote);
-  } catch (_) { displayQuote("Tu n'es pas seul. Chaque jour est une nouvelle opportunité."); }
+  } catch (_) { displayQuote("Tu n'es pas seul."); }
 }
 
-function displayQuote(q) {
-  quoteLoader.style.display = 'none';
-  quoteText.textContent = `"${q}"`;
-  quoteText.style.display = 'block';
-}
+function displayQuote(q) { quoteLoader.style.display = 'none'; quoteText.textContent = `"${q}"`; quoteText.style.display = 'block'; }
 
 async function loadCurrentMood() {
   if (!currentUser) return;
@@ -476,8 +413,7 @@ async function loadCurrentMood() {
     if (!res.ok) return;
     const data = await res.json();
     if (data.history && data.history.length > 0) {
-      currentMood = data.history[0].mood;
-      selectMood(currentMood);
+      currentMood = data.history[0].mood; selectMood(currentMood);
     }
   } catch (err) {}
 }
@@ -499,11 +435,7 @@ async function updateGreeting() {
 
 function setupEventListeners() {
   navButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      navButtons.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      if (btn.dataset.href) window.location.href = btn.dataset.href;
-    });
+    btn.addEventListener('click', () => { navButtons.forEach(b => b.classList.remove('active')); btn.classList.add('active'); if (btn.dataset.href) window.location.href = btn.dataset.href; });
   });
 
   if (newPostBtn) newPostBtn.addEventListener('click', openNewPostModal);
@@ -513,10 +445,7 @@ function setupEventListeners() {
   if (orderSelect) orderSelect.addEventListener('change', () => loadPosts(false));
 
   const loadMoreBtn = document.getElementById('btn-load-more');
-  if (loadMoreBtn) {
-      loadMoreBtn.addEventListener('click', () => { currentOffset += POSTS_PER_PAGE; loadPosts(true); });
-  }
-
+  if (loadMoreBtn) loadMoreBtn.addEventListener('click', () => { currentOffset += POSTS_PER_PAGE; loadPosts(true); });
   document.addEventListener('click', e => { if (e.target.id === 'boardModal') closeModal(); });
 }
 
@@ -533,8 +462,8 @@ function showModal(title, bodyHTML, onConfirm) {
       <h3 style="font-size:1.3rem;font-weight:700;color:#1e293b;margin-bottom:20px">${escHtml(title)}</h3>
       <div id="modalBody">${bodyHTML}</div>
       <div style="display:flex;gap:12px;margin-top:20px">
-        <button id="modalCancel" style="flex:1;padding:12px;border:2px solid #e2e8f0;border-radius:12px;background:white;font-weight:600;cursor:pointer;font-family:inherit">Annuler</button>
-        <button id="modalConfirm" style="flex:2;padding:12px;background:linear-gradient(135deg,#818cf8,#a78bfa);color:white;border:none;border-radius:12px;font-weight:600;cursor:pointer;font-family:inherit">Confirmer</button>
+        <button id="modalCancel" style="flex:1;padding:12px;border:2px solid #e2e8f0;border-radius:12px;background:white;font-weight:600;cursor:pointer;">Annuler</button>
+        <button id="modalConfirm" style="flex:2;padding:12px;background:#818cf8;color:white;border:none;border-radius:12px;font-weight:600;cursor:pointer;">Publier</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -543,8 +472,8 @@ function showModal(title, bodyHTML, onConfirm) {
   if (anonCheckbox) {
     anonCheckbox.addEventListener('change', function() {
       const cb = this.nextElementSibling;
-      cb.style.background   = this.checked ? 'var(--primary,#8b5cf6)' : 'white';
-      cb.style.borderColor  = this.checked ? 'var(--primary,#8b5cf6)' : '#e2e8f0';
+      cb.style.background   = this.checked ? '#818cf8' : 'white';
+      cb.style.borderColor  = this.checked ? '#818cf8' : '#e2e8f0';
       cb.querySelector('svg').style.opacity = this.checked ? '1' : '0';
     });
   }

@@ -1,9 +1,10 @@
-// post.js — Page détail d'un post (Version Ultra-Blindée 🛡️ + TOUTES LES FONCTIONS)
+// post.js — Page détail d'un post (Version corrigée Anonymat)
 const API_BASE = '/api'; 
 const fetchOpts = { credentials: 'include' };
 
 // ── État global ───────────────────────────────────────────────────────────────
 let currentUser = null;
+let userSettings = null; // 🔴 NOUVEAU : Sauvegarde des paramètres utilisateurs
 let postData    = null;
 let postId      = null;
 
@@ -38,6 +39,11 @@ async function checkAuth() {
   try {
     const res = await fetch(`${API_BASE}/me`, fetchOpts);
     if (res.ok) currentUser = await res.json();
+
+    // 🔴 NOUVEAU : Récupération discrète des paramètres de l'utilisateur
+    const setRes = await fetch(`${API_BASE}/settings/`, fetchOpts);
+    if (setRes.ok) userSettings = await setRes.json();
+
   } catch (_) {}
 }
 
@@ -47,10 +53,8 @@ async function loadPost() {
     if (!res.ok) { renderError('Le serveur a renvoyé une erreur : ' + res.status); return; }
     
     let data = await res.json();
-    
     let extractedPost = data.post || data.data || data;
     if (Array.isArray(extractedPost)) extractedPost = extractedPost[0];
-    
     postData = extractedPost;
 
     if (!postData || (!postData.title && !postData.Title)) {
@@ -167,8 +171,6 @@ function renderPost(post, liked) {
     document.getElementById('deletePostBtn')?.addEventListener('click', handleDeletePost);
   }
 }
-
-// ── FONCTIONS MANQUANTES RAJOUTÉES ──────────────────────────────────────────
 
 async function handleLike() {
   if (!currentUser) { showAuthToast(); return; }
@@ -298,6 +300,7 @@ function updateCommentCount(n) {
   if (countEl) countEl.textContent = n;
 }
 
+// 🔴 CORRECTION DU COMPORTEMENT ANONYME PAR DÉFAUT
 function renderCommentForm() {
   const container = getCommentFormContainer();
   if (!container) return;
@@ -306,19 +309,47 @@ function renderCommentForm() {
     return;
   }
 
+  // Lecture du réglage récupéré plus haut
+  const isAnon = userSettings && userSettings.anon_by_default;
+  const cbBg = isAnon ? '#818cf8' : 'white';
+  const cbBorder = isAnon ? '#818cf8' : '#d1d5db';
+  const svgOpacity = isAnon ? '1' : '0';
+
   container.innerHTML = `
     <div class="comment-form-card">
       <textarea class="comment-textarea" id="commentInput" rows="3" placeholder="Laisse un commentaire de soutien..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;"></textarea>
-      <div class="comment-form-footer" style="margin-top:10px; text-align:right;">
+      <div class="comment-form-footer" style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
+        <label class="anon-label" style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem; color:#64748b;">
+            <input type="checkbox" id="commentAnon" style="display:none;" ${isAnon ? 'checked' : ''}>
+            <div class="anon-checkbox" style="width:18px; height:18px; border-radius:6px; border:2px solid ${cbBorder}; background:${cbBg}; display:flex; align-items:center; justify-content:center; transition:all 0.2s;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:12px; height:12px; opacity:${svgOpacity}; transition:opacity 0.2s;">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div> 
+            Anonyme
+        </label>
         <button class="submit-comment-btn" id="submitComment" style="padding:8px 16px; background:#818cf8; color:white; border:none; border-radius:8px; cursor:pointer;">Publier</button>
       </div>
     </div>`;
   
+  const anonCheckbox = document.getElementById('commentAnon');
+  if (anonCheckbox) {
+      anonCheckbox.addEventListener('change', function() {
+        const cb = this.nextElementSibling;
+        cb.style.background  = this.checked ? '#818cf8' : 'white';
+        cb.style.borderColor = this.checked ? '#818cf8' : '#d1d5db';
+        cb.querySelector('svg').style.opacity = this.checked ? '1' : '0';
+      });
+  }
+
   document.getElementById('submitComment')?.addEventListener('click', handleAddComment);
 }
 
 async function handleAddComment() {
   const content = document.getElementById('commentInput').value.trim();
+  // 🔴 CORRECTION IMPORTANTE : on lit bien l'état de la case au lieu de forcer '0'
+  const anon = document.getElementById('commentAnon').checked ? 1 : 0;
+
   if (!content) { showToast('Le commentaire est vide.', true); return; }
 
   const btn = document.getElementById('submitComment');
@@ -326,7 +357,7 @@ async function handleAddComment() {
 
   try {
     const res = await fetch(`${API_BASE}/posts/${postId}/comments`, {
-      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content, is_anonymous: 0 }),
+      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content, is_anonymous: anon }),
     });
     const newComment = await res.json();
     if (!res.ok) { showToast("Erreur serveur.", true); btn.disabled = false; btn.textContent = 'Publier'; return; }
