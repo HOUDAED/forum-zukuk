@@ -1,4 +1,4 @@
-// Board JavaScript - Frontend Logic (Couleurs originales + Mode Anonyme Auto)
+// Board JavaScript - Frontend Logic Polymorphe
 const API_BASE = '/api';
 
 // ─── UI : TOAST & MODALE DE CONFIRMATION ────────────────────────────────────
@@ -44,9 +44,9 @@ function showConfirmModal(title, message, onConfirm) {
     document.getElementById('accept-confirm').onclick = () => { close(); onConfirm(); };
 }
 
-// 1. Anti-scintillement pour le thème clair/sombre
-const savedTheme = localStorage.getItem('zukuk_theme') || 'light';
-document.body.setAttribute('data-theme', savedTheme);
+// 1. On cible document.documentElement !
+const savedTheme = localStorage.getItem('zukuk_theme') || 'glass';
+document.documentElement.setAttribute('data-theme', savedTheme);
 
 // ── DOM refs & États globaux ──────────────────────────────────────────────────
 const moodGrid       = document.getElementById('moodGrid');
@@ -63,20 +63,19 @@ const newPostBtn     = document.getElementById('newPostBtn');
 
 let currentMood   = 'Calme';
 let currentUser   = null;
-let userSettings  = null; // 🔴 Récupère les paramètres (dont Anonyme par défaut)
+let userSettings  = null; 
 let searchTimer   = null;
 let currentOffset = 0; 
 const POSTS_PER_PAGE = 20;
 const fetchOpts = { credentials: 'include' };
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // Récupération des paramètres en priorité
   try {
       const res = await fetch(`${API_BASE}/settings/`, fetchOpts);
       if (res.ok) {
           userSettings = await res.json();
           if (userSettings.theme && userSettings.theme !== savedTheme) {
-              document.body.setAttribute('data-theme', userSettings.theme);
+              document.documentElement.setAttribute('data-theme', userSettings.theme);
               localStorage.setItem('zukuk_theme', userSettings.theme);
           }
       }
@@ -87,7 +86,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderMoodsLocal();
   await loadCurrentMood();
   loadPosts(false);
-  renderStatsLocal();
   fetchRandomQuote();
   setupEventListeners();
   updateUIForAuthState();
@@ -113,7 +111,7 @@ function updateUIForAuthState() {
 async function loadPosts(append = false) {
   if (!append) {
       currentOffset = 0;
-      if (discussionsList) discussionsList.innerHTML = '<p style="text-align:center; color:var(--text-gray); padding:24px;">Chargement des discussions...</p>';
+      if (discussionsList) discussionsList.innerHTML = '<p style="text-align:center; color:var(--text-secondary); padding:24px;">Chargement des discussions...</p>';
   }
 
   const query = searchInput ? searchInput.value.trim() : '';
@@ -149,7 +147,7 @@ function renderPosts(posts, append = false) {
   if (!append) discussionsList.innerHTML = '';
 
   if (posts.length === 0 && currentOffset === 0) {
-    discussionsList.innerHTML = '<p style="color:var(--text-gray);text-align:center;padding:24px">Aucun post trouvé.</p>';
+    discussionsList.innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:24px">Aucun post trouvé.</p>';
     if (loadMoreBtn) loadMoreBtn.style.display = 'none';
     return;
   }
@@ -234,7 +232,7 @@ async function toggleLike(postId, btn) {
     if (res.ok) {
       const data = await res.json();
       btn.querySelector('span').textContent = data.count;
-      btn.style.color = data.liked ? '#ff5722' : '';
+      btn.classList.toggle('liked', data.liked);
     }
   } catch (err) {}
 }
@@ -251,24 +249,22 @@ function buildCategoryOptions(selectedId) {
   return categories.map(c => `<option value="${c.id}"${c.id===selectedId?' selected':''}>${escHtml(c.name)}</option>`).join('');
 }
 
-// 🔴 MODALE DE CRÉATION : Avec Anonymat Automatique
 function openNewPostModal() {
   if (!currentUser) { showAuthToast(); return; }
   fetchCategories().then(() => {
       
     const isAnon = userSettings && userSettings.anon_by_default;
-    const cbBg = isAnon ? '#818cf8' : 'white';
-    const cbBorder = isAnon ? '#818cf8' : '#e2e8f0';
+    const cbBorder = isAnon ? 'var(--primary-color)' : 'var(--border-color)';
     const svgOpacity = isAnon ? '1' : '0';
 
     showModal('Nouveau post',
       `<div class="modal-field"><label>Titre</label><input id="m-title" class="modern-input" placeholder="Titre de ta discussion"></div>
        <div class="modal-field"><label>Contenu</label><textarea id="m-content" class="modern-input" rows="5" placeholder="Partage ta pensée..."></textarea></div>
-       <div class="modal-field"><label>Catégorie</label><select id="m-cat" class="modern-input"><option value="">-- Choisir --</option>${buildCategoryOptions(null)}</select></div>
-       <label class="checkbox-label" style="margin-top:8px; display:flex; align-items:center; gap:8px; cursor:pointer;">
-         <input type="checkbox" id="m-anon" style="display:none;" ${isAnon ? 'checked' : ''}>
-         <div class="custom-checkbox" style="width:18px; height:18px; border-radius:6px; border:2px solid ${cbBorder}; background:${cbBg}; display:flex; align-items:center; justify-content:center; transition:all 0.2s;">
-             <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:12px; height:12px; opacity:${svgOpacity}; transition:opacity 0.2s;">
+       <div class="modal-field"><label>Catégorie</label><select id="m-cat" class="board-select" style="width:100%"><option value="">-- Choisir --</option>${buildCategoryOptions(null)}</select></div>
+       <label class="checkbox-label" style="margin-top:8px;">
+         <input type="checkbox" id="m-anon" ${isAnon ? 'checked' : ''}>
+         <div class="custom-checkbox" style="border-color:${cbBorder};">
+             <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="opacity:${svgOpacity}; transition:opacity 0.2s;">
                  <polyline points="20 6 9 17 4 12"></polyline>
              </svg>
          </div>
@@ -278,8 +274,6 @@ function openNewPostModal() {
         const title   = document.getElementById('m-title').value.trim();
         const content = document.getElementById('m-content').value.trim();
         const catId   = document.getElementById('m-cat').value || null;
-        
-        // Lecture parfaite de la case "Anonyme"
         const anon    = document.getElementById('m-anon').checked ? 1 : 0;
 
         if (title.length < 3) { showToast("Le titre doit faire au moins 3 caractères.", true); return; }
@@ -345,7 +339,6 @@ async function deletePost(postId, card) {
     });
 }
 
-// ── FONCTION RESTAURÉE : DÉGRADÉS D'HUMEUR ──────────────────────────────────
 function renderMoodsLocal() {
   const moods = [{ name:'Bien', emoji:'😊' }, { name:'Calme', emoji:'😌' }, { name:'Triste', emoji:'😢' }, { name:'Anxieux', emoji:'😰' }, { name:'Colère', emoji:'😡' }];
   moodGrid.innerHTML = '';
@@ -361,40 +354,19 @@ function renderMoodsLocal() {
   });
 }
 
-// 🔴 LE RETOUR DE LA COULEUR : Voici la fonction originale intacte
+// 🔴 La fonction cible maintenant "documentElement"
 function selectMood(name) {
   currentMood = name;
   document.querySelectorAll('.mood-button').forEach(b => b.classList.toggle('active', b.textContent.includes(name)));
   
-  const colors = {
-    'Bien':    'linear-gradient(135deg,#fdf4ff 0%,#fae8ff 50%,#fce7f3 100%)',
-    'Calme':   'linear-gradient(135deg,#f0fdf4 0%,#dcfce7 50%,#e0f2fe 100%)',
-    'Triste':  'linear-gradient(135deg,#eff6ff 0%,#dbeafe 50%,#e0e7ff 100%)',
-    'Anxieux': 'linear-gradient(135deg,#f8fafc 0%,#f1f5f9 50%,#e2e8f0 100%)',
-    'Colère':  'linear-gradient(135deg,#fff7ed 0%,#ffedd5 50%,#fef08a 100%)',
-  };
-  
-  const bg = document.querySelector('.background-gradient');
-  if (bg) { 
-      bg.style.transition = 'background 1.5s ease-in-out'; 
-      bg.style.background = colors[name] || colors['Calme']; 
-  }
-  
   const normalizedMood = name.toLowerCase().replace('è', 'e');
-  document.body.setAttribute('data-mood', normalizedMood);
+  
+  // Applique à toute la page <html> !
+  document.documentElement.setAttribute('data-mood', normalizedMood);
+  localStorage.setItem('zukuk_mood', normalizedMood);
 }
 
 async function saveMood(mood) { try { await fetch(`${API_BASE}/mood`, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify(mood) }); } catch (_) {} }
-
-function renderStatsLocal() {
-  statsSection.innerHTML = '';
-  [{ title:'Posts partagés', color:'blue' }, { title:'Réponses reçues', color:'red' }, { title:'Jours actifs', color:'purple' }].forEach(s => {
-    const card = document.createElement('div');
-    card.className = 'stat-card';
-    card.innerHTML = `<div class="stat-icon ${s.color}"></div><span class="stat-title">${s.title}</span>`;
-    statsSection.appendChild(card);
-  });
-}
 
 async function fetchRandomQuote() {
   try {
@@ -457,13 +429,13 @@ function showModal(title, bodyHTML, onConfirm) {
   modal.id = 'boardModal';
   modal.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.35);backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;`;
   modal.innerHTML = `
-    <div style="background:white;border-radius:24px;padding:32px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,0.15);position:relative;animation:fadeIn .2s ease">
-      <button id="closeModal" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af">✕</button>
-      <h3 style="font-size:1.3rem;font-weight:700;color:#1e293b;margin-bottom:20px">${escHtml(title)}</h3>
+    <div style="width:100%;max-width:520px;border-radius:24px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,0.15);position:relative;animation:fadeIn .2s ease">
+      <button id="closeModal" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-secondary)">✕</button>
+      <h3 style="font-size:1.3rem;font-weight:700;color:var(--primary-color);margin-bottom:20px">${escHtml(title)}</h3>
       <div id="modalBody">${bodyHTML}</div>
       <div style="display:flex;gap:12px;margin-top:20px">
-        <button id="modalCancel" style="flex:1;padding:12px;border:2px solid #e2e8f0;border-radius:12px;background:white;font-weight:600;cursor:pointer;">Annuler</button>
-        <button id="modalConfirm" style="flex:2;padding:12px;background:#818cf8;color:white;border:none;border-radius:12px;font-weight:600;cursor:pointer;">Publier</button>
+        <button id="modalCancel" class="btn-secondary" style="flex:1;padding:12px;border-radius:12px;font-weight:600;cursor:pointer;">Annuler</button>
+        <button id="modalConfirm" style="flex:2;padding:12px;border:none;border-radius:12px;font-weight:600;cursor:pointer;">Publier</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -472,8 +444,7 @@ function showModal(title, bodyHTML, onConfirm) {
   if (anonCheckbox) {
     anonCheckbox.addEventListener('change', function() {
       const cb = this.nextElementSibling;
-      cb.style.background   = this.checked ? '#818cf8' : 'white';
-      cb.style.borderColor  = this.checked ? '#818cf8' : '#e2e8f0';
+      cb.style.borderColor  = this.checked ? 'var(--primary-color)' : 'var(--border-color)';
       cb.querySelector('svg').style.opacity = this.checked ? '1' : '0';
     });
   }
@@ -494,8 +465,8 @@ function showAuthToast() {
 
   const toast = document.createElement('div');
   toast.id = 'authToast';
-  toast.innerHTML = `<span>🔒 <a href="/login" style="color:#818cf8;font-weight:700;text-decoration:underline">Connectez-vous</a> pour interagir</span>`;
-  toast.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:white;padding:14px 24px;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,0.12);font-size:0.95rem;color:#1e293b;z-index:2000;animation:slideUp .3s ease;border:1px solid rgba(129,140,248,0.3)`;
+  toast.innerHTML = `<span>🔒 <a href="/login" style="color:var(--primary-color);font-weight:700;text-decoration:underline">Connectez-vous</a> pour interagir</span>`;
+  toast.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg-element);padding:14px 24px;border-radius:16px;box-shadow:var(--shadow-md);font-size:0.95rem;color:var(--text-primary);z-index:2000;animation:slideUp .3s ease;border:1px solid var(--border-color)`;
   document.body.appendChild(toast);
   setTimeout(() => { if (toast.parentNode) toast.remove(); }, 3500);
 }

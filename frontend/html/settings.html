@@ -5,6 +5,13 @@
     <title>Paramètres - Zukuk</title>
     <link rel="stylesheet" href="/frontend/css/board.css">
     <link rel="stylesheet" href="/frontend/css/settings.css">
+    <script>
+        // Applique instantanément le thème et l'humeur sur la racine (HTML)
+        const t = localStorage.getItem('zukuk_theme') || 'glass';
+        const m = localStorage.getItem('zukuk_mood') || 'calme';
+        document.documentElement.setAttribute('data-theme', t);
+        document.documentElement.setAttribute('data-mood', m);
+    </script>
 </head>
 <body>
     <div class="app-container">
@@ -59,7 +66,7 @@
                                 <h3>Sessions actives</h3>
                                 <p class="sub-text">Voici les appareils actuellement connectés à ton compte.</p>
                                 <div id="sessions-list" class="sessions-list">
-                                    <div style="color: #64748b;">Chargement des sessions...</div>
+                                    <div style="color: var(--text-secondary);">Chargement des sessions...</div>
                                 </div>
                                 <button class="btn-action btn-outline" id="btn-revoke-sessions" style="margin-top: 15px;">
                                     Déconnecter tous les autres appareils

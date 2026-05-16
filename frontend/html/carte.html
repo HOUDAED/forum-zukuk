@@ -8,6 +8,14 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="/frontend/css/board.css">
     <link rel="stylesheet" href="/frontend/css/maps.css">
+    <link rel="stylesheet" href="/frontend/css/master-theme.css">
+    <script>
+        // Applique instantanément le thème et l'humeur avant même que la page ne charge !
+        const t = localStorage.getItem('zukuk_theme') || 'glass';
+        const m = localStorage.getItem('zukuk_mood') || 'calme';
+        document.documentElement.setAttribute('data-theme', t);
+        document.documentElement.setAttribute('data-mood', m);
+    </script>
 </head>
 <body>
     <div class="app-container">

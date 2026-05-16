@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zukuk - Discussion</title>
     <link rel="stylesheet" href="/frontend/css/board.css">
+    <link rel="stylesheet" href="/frontend/css/master-theme.css">
+<script>
+    // Applique instantanément le thème et l'humeur avant même que la page ne charge !
+    const t = localStorage.getItem('zukuk_theme') || 'glass';
+    const m = localStorage.getItem('zukuk_mood') || 'calme';
+    document.documentElement.setAttribute('data-theme', t);
+    document.documentElement.setAttribute('data-mood', m);
+</script>
     <style>
         /* ── Layout post page ── */
         body { overflow: auto; }

@@ -5,92 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zukuk - Forum Bien-être</title>
     <link rel="stylesheet" href="/frontend/css/board.css">
-    <style>
-        /* ── Search / filter bar ── */
-        .search-bar {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 8px;
-        }
-        .search-input-wrap {
-            flex: 1;
-            min-width: 180px;
-            position: relative;
-        }
-        .search-input-wrap svg {
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 16px; height: 16px;
-            color: #9ca3af;
-            pointer-events: none;
-        }
-        #boardSearch {
-            width: 100%;
-            padding: 11px 14px 11px 38px;
-            border: 1.5px solid #e5e7eb;
-            border-radius: 12px;
-            font-size: 0.9rem;
-            font-family: inherit;
-            background: white;
-            color: #1f2937;
-            transition: border-color .2s;
-        }
-        #boardSearch:focus { outline: none; border-color: #818cf8; }
-        .board-select {
-            padding: 10px 12px;
-            border: 1.5px solid #e5e7eb;
-            border-radius: 12px;
-            font-size: 0.85rem;
-            font-family: inherit;
-            background: white;
-            color: #374151;
-            cursor: pointer;
-        }
-        .board-select:focus { outline: none; border-color: #818cf8; }
-
-        /* ── Discussion excerpt ── */
-        .discussion-excerpt {
-            font-size: 0.88rem;
-            color: #6b7280;
-            margin: 0 0 12px;
-            line-height: 1.5;
-        }
-
-        /* ── Disabled action ── */
-        .disabled-action { opacity: .4; cursor: not-allowed !important; }
-
-        /* ── Owner buttons ── */
-        .edit-post   { color: #818cf8 !important; }
-        .delete-post { color: #ef4444 !important; }
-        .edit-post svg, .delete-post svg { width: 15px; height: 15px; }
-
-        /* ── Slideup toast animation ── */
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-
-        /* ── Modal inputs ── */
-        #boardModal .modal-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-        #boardModal .modal-field label { font-size: .85rem; font-weight: 600; color: #64748b; }
-        #boardModal .modern-input {
-            background: #f1f5f9; border: 2px solid transparent; border-radius: 12px;
-            padding: 12px 14px; font-size: .95rem; font-family: inherit;
-            color: #1e293b; width: 100%; resize: vertical;
-        }
-        #boardModal .modern-input:focus { background: white; border-color: #818cf8; outline: none; }
-        #boardModal .checkbox-label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: .9rem; color: #64748b; }
-        #boardModal .checkbox-label input { display: none; }
-        #boardModal .custom-checkbox {
-            width: 20px; height: 20px; border: 2px solid #e2e8f0; border-radius: 6px;
-            display: flex; align-items: center; justify-content: center; background: white; flex-shrink: 0;
-        }
-        #boardModal .custom-checkbox svg { width: 12px; height: 12px; stroke: white; opacity: 0; }
-    </style>
+    <script>
+        // Applique instantanément le thème et l'humeur sur la racine (HTML)
+        const t = localStorage.getItem('zukuk_theme') || 'glass';
+        const m = localStorage.getItem('zukuk_mood') || 'calme';
+        document.documentElement.setAttribute('data-theme', t);
+        document.documentElement.setAttribute('data-mood', m);
+    </script>
 </head>
 <body>
     <div class="app-container">
@@ -107,7 +28,6 @@
                     </div>
                     
                     <div class="header-actions">
-                        <!-- Nouveau post -->
                         <button class="btn-icon btn-primary" id="newPostBtn" title="Nouveau post">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -125,7 +45,6 @@
                 </header>
                 {{ template "notifications" . }}
 
-                <!-- Humeur -->
                 <section class="mood-section">
                     <div class="section-header">
                         <div class="section-indicator"></div>
@@ -134,10 +53,8 @@
                     <div class="mood-grid" id="moodGrid"></div>
                 </section>
 
-                <!-- Stats -->
                 <section class="stats-section" id="statsSection"></section>
 
-                <!-- Discussions / Posts -->
                 <section class="discussions-section">
                     <div class="section-header-with-link">
                         <div>
@@ -146,7 +63,6 @@
                         </div>
                     </div>
 
-                    <!-- Search + filters -->
                     <div class="search-bar">
                         <div class="search-input-wrap">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -167,17 +83,15 @@
                     </div>
                     
                     <div class="discussions-list" id="discussionsList"></div>
-                    <div id="posts-container" class="discussions-list">
-    </div>
+                    <div id="posts-container" class="discussions-list"></div>
 
-        <div style="text-align: center; margin-top: 30px; margin-bottom: 40px;">
-            <button id="btn-load-more" class="btn-secondary" style="padding: 12px 24px; border-radius: 20px; font-weight: 600; display: none; cursor: pointer;">
-                Charger plus de discussions ⬇️
-            </button>
-        </div>
+                    <div style="text-align: center; margin-top: 30px; margin-bottom: 40px;">
+                        <button id="btn-load-more" class="btn-secondary" style="padding: 12px 24px; border-radius: 20px; font-weight: 600; display: none; cursor: pointer;">
+                            Charger plus de discussions ⬇️
+                        </button>
+                    </div>
                 </section>
 
-                <!-- Quote banner -->
                 <div class="bottom-banner" id="quoteBanner">
                     <span class="banner-emoji">💙</span>
                     <div id="quoteLoader" class="quote-loader"></div>
@@ -189,91 +103,42 @@
 
     <script src="/frontend/js/board.js"></script>
 
-    <style>
-    /* Design des cartes de statistiques */
-    .stats-section {
-        display: flex;
-        gap: 16px;
-        margin-bottom: 24px;
-        flex-wrap: wrap;
-    }
-    .stat-card {
-        flex: 1;
-        min-width: 200px;
-        background: white;
-        border-radius: 16px;
-        padding: 16px 20px;
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    }
-    .stat-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        flex-shrink: 0;
-    }
-    .stat-info {
-        display: flex;
-        flex-direction: column;
-    }
-    .stat-value {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #1e293b;
-        line-height: 1.2;
-    }
-    .stat-label {
-        font-size: 0.85rem;
-        color: #64748b;
-        font-weight: 500;
-        margin-top: 4px;
-    }
-    /* Les couleurs de tes anciennes pastilles */
-    .bg-blue-100 { background-color: #dbeafe; }
-    .bg-red-50 { background-color: #fef2f2; }
-    .bg-purple-100 { background-color: #f3e8ff; }
-</style>
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    // On met un micro-délai de 500ms pour écraser les anciennes cartes vides générées par board.js
-    setTimeout(async () => {
-        try {
-            const res = await fetch('http://localhost:8081/api/me/dashboard-stats', { credentials: 'include' });
-            if (res.ok) {
-                const data = await res.json();
-                document.getElementById('statsSection').innerHTML = `
-                    <div class="stat-card">
-                        <div class="stat-icon bg-blue-100"></div>
-                        <div class="stat-info">
-                            <span class="stat-value">${data.posts}</span>
-                            <span class="stat-label">Posts partagés</span>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(async () => {
+            try {
+                const res = await fetch('/api/me/dashboard-stats', { credentials: 'include' });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('statsSection').innerHTML = `
+                        <div class="stat-card">
+                            <div class="stat-icon bg-blue-100"></div>
+                            <div class="stat-info">
+                                <span class="stat-value">${data.posts}</span>
+                                <span class="stat-label">Posts partagés</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon bg-red-50"></div>
-                        <div class="stat-info">
-                            <span class="stat-value">${data.responses}</span>
-                            <span class="stat-label">Réponses reçues</span>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-red-50"></div>
+                            <div class="stat-info">
+                                <span class="stat-value">${data.responses}</span>
+                                <span class="stat-label">Réponses reçues</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon bg-purple-100"></div>
-                        <div class="stat-info">
-                            <span class="stat-value">${data.active_days}</span>
-                            <span class="stat-label">Jours actifs</span>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-purple-100"></div>
+                            <div class="stat-info">
+                                <span class="stat-value">${data.active_days}</span>
+                                <span class="stat-label">Jours actifs</span>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
+            } catch (e) {
+                console.error("Erreur stats :", e);
             }
-        } catch (e) {
-            console.error("Erreur lors de la récupération des statistiques :", e);
-        }
-    }, 500); 
-});
-</script>
-
+        }, 500); 
+    });
+    </script>
 </body>
 </html>
