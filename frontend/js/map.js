@@ -1,6 +1,4 @@
-const API_BASE = window.location.hostname === 'localhost' 
-    ? 'http://localhost:8081/api' 
-    : '/api'; // RENDER LINK REVERSE PROXY
+const API_BASE = '/api';
 
 let map, markers = [];
 let activities = [];

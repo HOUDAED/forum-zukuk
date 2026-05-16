@@ -1,7 +1,4 @@
-// network.js — Page communauté
-const API_BASE = window.location.hostname === 'localhost' 
-    ? 'http://localhost:8081/api' 
-    : '/api';// REMPLACE PAR TON VRAI LIEN RENDER
+const API_BASE = '/api';
 const fetchOpts = { credentials: 'include' };
 
 let searchTimer = null;

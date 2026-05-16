@@ -1,9 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     
-    // NOUVEAU : Format adapté pour le Reverse Proxy (sécurité anti-crash)
-    const API_BASE = window.location.hostname === 'localhost' 
-    ? 'http://localhost:8081' 
-    : ''; // Sur Render, le chemin relatif suffit grâce au Reverse Proxy !
+   const API_BASE = '';
     
     let currentSettings = {};
 
