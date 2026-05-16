@@ -27,12 +27,13 @@ func main() {
 	mux.Handle("/frontend/css/", http.StripPrefix("/frontend/css/", http.FileServer(http.Dir(filepath.Join(baseDir, "css")))))
 	mux.Handle("/frontend/js/", http.StripPrefix("/frontend/js/", http.FileServer(http.Dir(filepath.Join(baseDir, "js")))))
 
-	// 🔴 3. LA MAGIE : LE REVERSE PROXY 🔴
-	// Toutes les requêtes qui commencent par "/api/" sont capturées par le frontend 
-	// et envoyées discrètement au backend sur le port 8081.
+// 🔴 3. LA MAGIE : LE REVERSE PROXY 🔴
+	// Toutes les requêtes qui commencent par "/api/" ou "/uploads/" sont envoyées au backend
 	target, _ := url.Parse("http://localhost:8081")
 	proxy := httputil.NewSingleHostReverseProxy(target)
+	
 	mux.Handle("/api/", proxy)
+	mux.Handle("/uploads/", proxy) // 👈 AJOUTE CETTE LIGNE ICI !
 
 	// 4. Pré-chargement des templates
 	t := template.New("Zukuk")

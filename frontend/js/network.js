@@ -119,7 +119,7 @@ function buildMemberCard(m, index) {
 
   // 🔴 C'EST CETTE LIGNE QUI RÈGLE TON PROBLÈME (Ajout de http://localhost:8081)
 const avatarHTML = m.avatar_url
-    ? `<img src="${m.avatar_url.startsWith('http') ? m.avatar_url : 'http://localhost:8081' + m.avatar_url}" alt="avatar">`
+    ? `<img src="${m.avatar_url.startsWith('http') ? m.avatar_url : (window.location.hostname === 'localhost' ? 'http://localhost:8081' : '') + m.avatar_url}" alt="avatar">`
     : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${bgColor};color:${textColor};font-weight:700;font-size:18px;border-radius:50%">${initials(m.pseudo)}</div>`;
 
   const moodHTML = m.current_mood
