@@ -285,3 +285,33 @@ h1, h2, h3, .header-title, .logo-text, .discussion-title, .stat-value {
 @media (max-width: 1024px) { .sidebar { width: 200px; } .stats-section { grid-template-columns: 1fr; } .content-wrapper { padding: 24px; } }
 @media (max-width: 768px) { .app-container { flex-direction: column; } .sidebar { width: 100%; height: auto; flex-direction: row; padding: 16px; border-right: none; border-bottom: 1px solid var(--border-color); } .sidebar-nav { flex-direction: row; flex-wrap: wrap; margin-top: 0;} .main-content { height: auto; } .header { flex-direction: column; align-items: flex-start; gap: 16px; } .header-actions { width: 100%; justify-content: flex-end; } .mood-grid { justify-content: space-between; } .mood-button { flex: 1; min-width: 80px; } }
 @media (max-width: 480px) { .sidebar { flex-direction: column; } .sidebar-nav { flex-direction: column; gap: 4px; } .nav-label { display: none; } .content-wrapper { padding: 16px; gap: 16px; } .header-title { font-size: 20px; } .mood-grid { flex-direction: column; align-items: stretch; } .mood-button { width: 100%; } }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   🎯 FIX POUR RENDRE LES ICÔNES DE LIKES ET COMMENTAIRES VISIBLES PARTOUT
+   ═══════════════════════════════════════════════════════════════════════════ */
+.discussion-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.discussion-action svg {
+    width: 16px !important;
+    height: 16px !important;
+    stroke: var(--text-secondary) !important; /* Force la couleur pour être visible sur tous les thèmes */
+    stroke-width: 2.5 !important;            /* Épaissit les contours pour l'impact visuel */
+    fill: none !important;
+    transition: transform 0.2s ease, stroke 0.2s ease !important;
+}
+
+/* Effet de survol interactif et polymorphe sur les icônes */
+.discussion-action:hover svg {
+    stroke: var(--primary-color) !important;
+    transform: scale(1.18) !important;
+}
+
+/* Quand une publication est likée par l'utilisateur */
+.discussion-action.like.liked svg {
+    stroke: var(--primary-color) !important;
+    fill: var(--primary-color) !important;
+}
