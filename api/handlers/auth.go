@@ -29,12 +29,13 @@ type LoginRequest struct {
 }
 
 type UpdateProfileRequest struct {
-	Pseudo          string `json:"pseudo"`
-	Email           string `json:"email"`
-	Password        string `json:"password"`
-	ConfirmPassword string `json:"confirmPassword"`
-	CurrentPassword string `json:"currentPassword"`
-	AvatarURL       string `json:"avatar_url"`
+    Pseudo          string  `json:"pseudo"`
+    Email           string  `json:"email"`
+    AvatarURL       string  `json:"avatar_url"`
+    Bio             *string `json:"bio"` // 🔴 AJOUT : Le pointeur (*) est très important !
+    Password        string  `json:"password"`
+    CurrentPassword string  `json:"currentPassword"`
+    ConfirmPassword string  `json:"confirmPassword"`
 }
 
 func Register(c *gin.Context) {
@@ -183,94 +184,108 @@ func GetMe(c *gin.Context) {
 }
 
 func UpdateProfile(c *gin.Context) {
-	userID := c.GetInt("userID")
-	var req UpdateProfileRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Données invalides."})
-		return
-	}
+    userID := c.GetInt("userID")
+    var req UpdateProfileRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Données invalides."})
+        return
+    }
 
-	if req.Pseudo != "" {
-		req.Pseudo = strings.TrimSpace(req.Pseudo)
-		if !utils.ValidatePseudo(req.Pseudo) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Pseudo invalide (3-20 caractères)."})
-			return
-		}
-		var count int
-		database.ZUKUKDB.QueryRow(`SELECT COUNT(*) FROM users WHERE pseudo = ? AND id != ? AND deleted_at IS NULL`, req.Pseudo, userID).Scan(&count)
-		if count > 0 {
-			c.JSON(http.StatusConflict, gin.H{"error": "Ce pseudo est déjà pris."})
-			return
-		}
-		if _, err := database.ZUKUKDB.Exec(`UPDATE users SET pseudo = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, req.Pseudo, userID); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur mise à jour pseudo."})
-			return
-		}
-	}
+    // --- M.A.J PSEUDO ---
+    if req.Pseudo != "" {
+        req.Pseudo = strings.TrimSpace(req.Pseudo)
+        if !utils.ValidatePseudo(req.Pseudo) {
+            c.JSON(http.StatusBadRequest, gin.H{"error": "Pseudo invalide (3-20 caractères)."})
+            return
+        }
+        var count int
+        database.ZUKUKDB.QueryRow(`SELECT COUNT(*) FROM users WHERE pseudo = ? AND id != ? AND deleted_at IS NULL`, req.Pseudo, userID).Scan(&count)
+        if count > 0 {
+            c.JSON(http.StatusConflict, gin.H{"error": "Ce pseudo est déjà pris."})
+            return
+        }
+        if _, err := database.ZUKUKDB.Exec(`UPDATE users SET pseudo = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, req.Pseudo, userID); err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur mise à jour pseudo."})
+            return
+        }
+    }
 
-	if req.Email != "" {
-		req.Email = strings.ToLower(strings.TrimSpace(req.Email))
-		if !utils.ValidateEmail(req.Email) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Email invalide."})
-			return
-		}
-		var count int
-		database.ZUKUKDB.QueryRow(`SELECT COUNT(*) FROM users WHERE email = ? AND id != ? AND deleted_at IS NULL`, req.Email, userID).Scan(&count)
-		if count > 0 {
-			c.JSON(http.StatusConflict, gin.H{"error": "Cet email est déjà utilisé."})
-			return
-		}
-		if _, err := database.ZUKUKDB.Exec(`UPDATE users SET email = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, req.Email, userID); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur mise à jour email."})
-			return
-		}
-	}
+    // --- M.A.J EMAIL ---
+    if req.Email != "" {
+        req.Email = strings.ToLower(strings.TrimSpace(req.Email))
+        if !utils.ValidateEmail(req.Email) {
+            c.JSON(http.StatusBadRequest, gin.H{"error": "Email invalide."})
+            return
+        }
+        var count int
+        database.ZUKUKDB.QueryRow(`SELECT COUNT(*) FROM users WHERE email = ? AND id != ? AND deleted_at IS NULL`, req.Email, userID).Scan(&count)
+        if count > 0 {
+            c.JSON(http.StatusConflict, gin.H{"error": "Cet email est déjà utilisé."})
+            return
+        }
+        if _, err := database.ZUKUKDB.Exec(`UPDATE users SET email = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, req.Email, userID); err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur mise à jour email."})
+            return
+        }
+    }
 
-	if req.AvatarURL != "" {
-		if _, err := database.ZUKUKDB.Exec(`UPDATE users SET avatar_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, strings.TrimSpace(req.AvatarURL), userID); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur mise à jour avatar."})
-			return
-		}
-	}
+    // 🔴 --- M.A.J BIO (L'AJOUT EST ICI) --- 🔴
+    if req.Bio != nil { 
+        // Si le JS a envoyé le champ "bio" (même s'il est vide pour l'effacer)
+        bioText := strings.TrimSpace(*req.Bio)
+        if _, err := database.ZUKUKDB.Exec(`UPDATE users SET bio = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, bioText, userID); err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur mise à jour bio."})
+            return
+        }
+    }
 
-	if req.Password != "" {
-		if req.Password != req.ConfirmPassword {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Les mots de passe ne correspondent pas."})
-			return
-		}
-		if !utils.ValidatePassword(req.Password) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": utils.PasswordPolicyMessage()})
-			return
-		}
+    // --- M.A.J AVATAR ---
+    if req.AvatarURL != "" {
+        if _, err := database.ZUKUKDB.Exec(`UPDATE users SET avatar_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, strings.TrimSpace(req.AvatarURL), userID); err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur mise à jour avatar."})
+            return
+        }
+    }
 
-		var currentHash string
-		if err := database.ZUKUKDB.QueryRow(`SELECT password_hash FROM users WHERE id = ? AND deleted_at IS NULL`, userID).Scan(&currentHash); err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Utilisateur introuvable."})
-			return
-		}
+    // --- M.A.J MOT DE PASSE ---
+    if req.Password != "" {
+        if req.Password != req.ConfirmPassword {
+            c.JSON(http.StatusBadRequest, gin.H{"error": "Les mots de passe ne correspondent pas."})
+            return
+        }
+        if !utils.ValidatePassword(req.Password) {
+            c.JSON(http.StatusBadRequest, gin.H{"error": utils.PasswordPolicyMessage()})
+            return
+        }
 
-		if bcrypt.CompareHashAndPassword([]byte(currentHash), []byte(req.CurrentPassword)) != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Mot de passe actuel incorrect."})
-			return
-		}
+        var currentHash string
+        if err := database.ZUKUKDB.QueryRow(`SELECT password_hash FROM users WHERE id = ? AND deleted_at IS NULL`, userID).Scan(&currentHash); err != nil {
+            c.JSON(http.StatusNotFound, gin.H{"error": "Utilisateur introuvable."})
+            return
+        }
 
-		if bcrypt.CompareHashAndPassword([]byte(currentHash), []byte(req.Password)) == nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Le nouveau mot de passe doit être différent du mot de passe actuel."})
-			return
-		}
+        if bcrypt.CompareHashAndPassword([]byte(currentHash), []byte(req.CurrentPassword)) != nil {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Mot de passe actuel incorrect."})
+            return
+        }
 
-		hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur interne."})
-			return
-		}
-		if _, err := database.ZUKUKDB.Exec(`UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, string(hash), userID); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur mise à jour mot de passe."})
-			return
-		}
-	}
+        if bcrypt.CompareHashAndPassword([]byte(currentHash), []byte(req.Password)) == nil {
+            c.JSON(http.StatusBadRequest, gin.H{"error": "Le nouveau mot de passe doit être différent du mot de passe actuel."})
+            return
+        }
 
-	c.JSON(http.StatusOK, gin.H{"message": "Profil mis à jour."})
+        hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+        if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur interne."})
+            return
+        }
+        if _, err := database.ZUKUKDB.Exec(`UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, string(hash), userID); err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur mise à jour mot de passe."})
+            return
+        }
+    }
+
+    c.JSON(http.StatusOK, gin.H{"message": "Profil mis à jour."})
 }
 
 func DeleteAccount(c *gin.Context) {

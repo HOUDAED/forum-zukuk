@@ -1,4 +1,4 @@
-// public_profile.js — Profil public d'un membre (Version Polymorphe 🛡️ - Sans Bio)
+// public_profile.js — Profil public d'un membre (Version Polymorphe 🛡️ + Bio)
 const API_BASE = '/api'; 
 const fetchOpts = { credentials: 'include' };
 
@@ -87,6 +87,12 @@ function renderProfile(user) {
             ? `<div class="hero-mood ${moodClass}">${moodEmoji} ${escHtml(currentMood)}</div>`
             : `<div class="hero-mood mood-default">Aucune humeur partagée</div>`;
 
+        // 🔴 RÉINTÉGRATION DE LA BIO ICI
+        const bioText = user.bio || user.Bio || '';
+        const bioHTML = bioText
+            ? `<p style="font-size:1rem; color:var(--text-secondary); margin-bottom:20px; line-height: 1.6; font-style: italic;">"${escHtml(bioText)}"</p>`
+            : '';
+
         const posts = Array.isArray(user.posts) ? user.posts : (Array.isArray(user.Posts) ? user.Posts : []);
         const comments = Array.isArray(user.comments) ? user.comments : (Array.isArray(user.Comments) ? user.Comments : []);
 
@@ -134,7 +140,7 @@ function renderProfile(user) {
                     <div style="flex:1">
                         <div class="hero-name">${escHtml(pseudo)}</div>
                         ${moodHTML}
-                        <div class="hero-stats">
+                        ${bioHTML} <div class="hero-stats">
                             <div class="hero-stat">
                                 <span class="hero-stat-value">${pCount}</span>
                                 <span class="hero-stat-label">Posts</span>

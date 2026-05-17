@@ -69,6 +69,7 @@ func GetNetwork(c *gin.Context) {
 }
 
 // GetPublicProfile – profil public d'un utilisateur avec ses posts non-anonymes
+// GetPublicProfile – profil public d'un utilisateur avec ses posts non-anonymes
 func GetPublicProfile(c *gin.Context) {
 	idStr := c.Param("id")
 
@@ -77,6 +78,7 @@ func GetPublicProfile(c *gin.Context) {
 		Pseudo        string `json:"pseudo"`
 		AvatarURL     string `json:"avatar_url"`
 		CurrentMood   string `json:"current_mood"`
+		Bio           string `json:"bio"` // 🔴 1. AJOUT DE LA BIO DANS LA STRUCTURE
 		PostsCount    int    `json:"posts_count"`
 		CommentsCount int    `json:"comments_count"`
 		LikesGiven    int    `json:"likes_given"`
@@ -87,6 +89,7 @@ func GetPublicProfile(c *gin.Context) {
 		SELECT
 			u.id, u.pseudo, COALESCE(u.avatar_url,'') AS avatar_url,
 			COALESCE(mh.mood,'') AS current_mood,
+			COALESCE(u.bio, '') AS bio, -- 🔴 2. AJOUT DU SELECT DE LA BIO
 			COUNT(DISTINCT p.id)    AS posts_count,
 			COUNT(DISTINCT com.id)  AS comments_count,
 			COUNT(DISTINCT pl.id)   AS likes_given
@@ -101,8 +104,9 @@ func GetPublicProfile(c *gin.Context) {
 		LEFT JOIN post_likes pl ON pl.user_id = u.id
 		WHERE u.id = ? AND u.deleted_at IS NULL
 		GROUP BY u.id`, idStr,
-	).Scan(&u.ID, &u.Pseudo, &u.AvatarURL, &u.CurrentMood,
+	).Scan(&u.ID, &u.Pseudo, &u.AvatarURL, &u.CurrentMood, &u.Bio, // 🔴 3. AJOUT DU SCAN DE LA BIO
 		&u.PostsCount, &u.CommentsCount, &u.LikesGiven)
+		
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Profil introuvable."})
 		return
