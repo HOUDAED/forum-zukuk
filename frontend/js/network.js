@@ -23,6 +23,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.documentElement.setAttribute('data-theme', settings.theme);
                 localStorage.setItem('zukuk_theme', settings.theme);
             }
+            // 🔴 AJOUT : Synchronise et applique la police
+            if (settings.font) {
+                document.documentElement.setAttribute('data-font', settings.font);
+                localStorage.setItem('zukuk_font', settings.font);
+            }
         }
 
         const moodRes = await fetch(`${API_BASE}/me/mood-history`, { credentials: 'include' });

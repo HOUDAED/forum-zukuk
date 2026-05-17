@@ -37,13 +37,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function checkAuth() {
   try {
+    // 1. Vérification de l'utilisateur (Indispensable pour liker/commenter)
     const res = await fetch(`${API_BASE}/me`, fetchOpts);
     if (res.ok) currentUser = await res.json();
 
-    // 🔴 NOUVEAU : Récupération discrète des paramètres de l'utilisateur
+    // 2. Récupération des paramètres (Thème + Police + Mode Anonyme)
     const setRes = await fetch(`${API_BASE}/settings/`, fetchOpts);
-    if (setRes.ok) userSettings = await setRes.json();
-
+    if (setRes.ok) {
+        userSettings = await setRes.json();
+        
+        // Mise à jour du Thème
+        if (userSettings.theme && userSettings.theme !== savedTheme) {
+            document.documentElement.setAttribute('data-theme', userSettings.theme);
+            localStorage.setItem('zukuk_theme', userSettings.theme);
+        }
+        
+        // 🔴 TON AJOUT : Synchronise et applique la police
+        if (userSettings.font) {
+            document.documentElement.setAttribute('data-font', userSettings.font);
+            localStorage.setItem('zukuk_font', userSettings.font);
+        }
+    }
+    
+    // 3. Récupération de l'humeur depuis la base de données
+    const moodRes = await fetch(`${API_BASE}/me/mood-history`, fetchOpts);
+    if (moodRes.ok) {
+        const moodData = await moodRes.json();
+        if (moodData.history && moodData.history.length > 0) {
+            const currentMood = moodData.history[0].mood.toLowerCase().replace('è', 'e');
+            document.documentElement.setAttribute('data-mood', currentMood);
+            localStorage.setItem('zukuk_mood', currentMood);
+        }
+    }
   } catch (_) {}
 }
 

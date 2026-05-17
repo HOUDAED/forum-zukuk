@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
             </div>
-            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; font-family: 'Merriweather', serif;">${title}</h3>
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary); margin-bottom: 12px;">${title}</h3>
             <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 28px; line-height: 1.5;">${message}</p>
             <div style="display: flex; gap: 12px;">
                 <button id="cancel-confirm" style="flex: 1; padding: 12px; border: 2px solid var(--border-color); border-radius: 14px; background: transparent; color: var(--text-secondary); font-weight: 600; cursor: pointer; transition: all 0.2s;">Annuler</button>
@@ -115,7 +115,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // ─── 2. CHARGEMENT DE L'INTERFACE ────────────────────────────────────
     async function loadSettings() {
         try {
-            // 1. Charge les paramètres de thème (Clair/Sombre/Glass)
             const res = await fetch(`${API_BASE}/settings/`, { credentials: 'include' });
             if (res.ok) {
                 currentSettings = await res.json();
@@ -124,10 +123,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(anonCheck) anonCheck.checked = currentSettings.anon_by_default;
                 
                 updateThemeButtons(currentSettings.theme);
+                
+                // 🔴 RÉCUPÉRATION DE LA POLICE
+                const savedFont = currentSettings.font || localStorage.getItem('zukuk_font') || 'auto';
+                const fontSelect = document.getElementById('pref-font');
+                if(fontSelect) fontSelect.value = savedFont;
+                
+                document.documentElement.setAttribute('data-font', savedFont);
                 document.documentElement.setAttribute('data-theme', currentSettings.theme);
             }
 
-            // 🔴 2. LA NOUVEAUTÉ : Demande l'humeur à la base de données !
             const moodRes = await fetch(`${API_BASE}/me/mood-history`, { credentials: 'include' });
             if (moodRes.ok) {
                 const moodData = await moodRes.json();
@@ -184,15 +189,29 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.theme-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const selectedTheme = e.currentTarget.getAttribute('data-theme');
-            
             updateThemeButtons(selectedTheme);
             updateSetting({ theme: selectedTheme });
-            
-            // Applique sur document.documentElement
             document.documentElement.setAttribute('data-theme', selectedTheme);
             localStorage.setItem('zukuk_theme', selectedTheme);
         });
     });
+
+    // 🔴 GESTION DU CHANGEMENT DE POLICE EN DIRECT
+    const fontSelect = document.getElementById('pref-font');
+    if (fontSelect) {
+        fontSelect.addEventListener('change', (e) => {
+            const selectedFont = e.target.value;
+            
+            // Applique la police instantanément sur toute la page
+            document.documentElement.setAttribute('data-font', selectedFont);
+            
+            // Sauvegarde dans le navigateur
+            localStorage.setItem('zukuk_font', selectedFont);
+            
+            // Sauvegarde dans la base de données (si ton API gère le champ 'font')
+            updateSetting({ font: selectedFont });
+        });
+    }
 
     // ─── 4. SÉCURITÉ : GESTION DES SESSIONS ──────────────────────────────
     async function loadSessions() {

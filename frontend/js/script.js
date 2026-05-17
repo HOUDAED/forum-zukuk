@@ -8,13 +8,13 @@ const EYE_OFF_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
 // ─────────────────────────────────────────────────────────────────────────────
 // 🎨 SYSTÈME DE THÈME GLOBAL ZUKUK
 // ─────────────────────────────────────────────────────────────────────────────
-
 const savedTheme = localStorage.getItem('zukuk_theme') || 'glass';
 document.documentElement.setAttribute('data-theme', savedTheme);
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        const res = await fetch(`${API_BASE}/api/settings/`, { credentials: 'include' });
+        // 🔴 CORRECTION ICI : on supprime le /api en trop !
+        const res = await fetch(`${API_BASE}/settings/`, { credentials: 'include' });
         if (res.ok) {
             const settings = await res.json();
             if (settings.theme && settings.theme !== savedTheme) {

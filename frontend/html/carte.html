@@ -10,11 +10,14 @@
     <link rel="stylesheet" href="/frontend/css/maps.css">
     <link rel="stylesheet" href="/frontend/css/master-theme.css">
     <script>
-        // Applique instantanément le thème et l'humeur avant même que la page ne charge !
+        // Applique instantanément le thème, l'humeur ET la police avant l'affichage de la page !
         const t = localStorage.getItem('zukuk_theme') || 'glass';
         const m = localStorage.getItem('zukuk_mood') || 'calme';
+        const f = localStorage.getItem('zukuk_font') || 'auto'; // 🔴 Charge la police choisie
+        
         document.documentElement.setAttribute('data-theme', t);
         document.documentElement.setAttribute('data-mood', m);
+        document.documentElement.setAttribute('data-font', f);   // 🔴 L'applique à la page
     </script>
 </head>
 <body>

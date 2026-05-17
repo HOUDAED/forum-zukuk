@@ -5,12 +5,14 @@
     <title>Paramètres - Zukuk</title>
     <link rel="stylesheet" href="/frontend/css/board.css">
     <link rel="stylesheet" href="/frontend/css/settings.css">
-    <script>
-        // Applique instantanément le thème et l'humeur sur la racine (HTML)
+   <script>
+        // Applique instantanément le thème, l'humeur ET la police
         const t = localStorage.getItem('zukuk_theme') || 'glass';
         const m = localStorage.getItem('zukuk_mood') || 'calme';
+        const f = localStorage.getItem('zukuk_font') || 'auto'; // 🔴 NOUVEAU
         document.documentElement.setAttribute('data-theme', t);
         document.documentElement.setAttribute('data-mood', m);
+        document.documentElement.setAttribute('data-font', f); // 🔴 NOUVEAU
     </script>
 </head>
 <body>
@@ -57,6 +59,19 @@
                                         <button class="theme-btn" data-theme="dark">Sombre</button>
                                         <button class="theme-btn" data-theme="glass">Glassmorphism ✨</button>
                                     </div>
+                                    
+                                </div>
+                                <div class="theme-selector" style="margin-top: 24px;">
+                                    <strong>Police d'écriture</strong>
+                                    <p class="sub-text" style="margin-bottom: 8px;">Choisis le style d'écriture de ton interface.</p>
+                                    <select id="pref-font" class="modern-input" style="cursor: pointer;">
+                                        <option value="auto">✨ Magique (S'adapte à mon humeur)</option>
+                                        <option value="outfit">Outfit (Moderne & Douce)</option>
+                                        <option value="lora">Lora (Littéraire & Roman)</option>
+                                        <option value="spacemono">Space Mono (Machine à écrire)</option>
+                                        <option value="montserrat">Montserrat (Lourde & Grasse)</option>
+                                        <option value="dancing">Dancing Script (Calligraphie)</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>

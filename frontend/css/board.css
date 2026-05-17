@@ -1,6 +1,9 @@
 /* ==========================================================================
-   🧠 VARIABLES POLYMORPHES ZUKUK (Thèmes & Humeurs Intelligentes)
+   🧠 VARIABLES POLYMORPHES ZUKUK (Thèmes, Humeurs & Polices)
    ========================================================================== */
+
+/* ── 0. IMPORTATION DES POLICES GOOGLE ── */
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script&family=Lora:ital,wght@0,400;0,600&family=Montserrat:wght@500;700;900&family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -35,15 +38,21 @@ html[data-theme="glass"] {
   --shadow-sm: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
-/* ── 2. LES HUMEURS (Écrits, Boutons ET Fonds de Page Dynamiques) ── */
+/* ── 2. LES HUMEURS (Écrits, Boutons, Fonds ET Polices !) ── */
 /* Par défaut */
-html { --primary-color: #10b981; --bg-page-light: #f0fdf4; --bg-page-dark: #064e3b; }
+html { 
+  --primary-color: #10b981; 
+  --bg-page-light: #f0fdf4; 
+  --bg-page-dark: #064e3b; 
+  --font-main: 'Outfit', sans-serif;
+}
 
 /* 😌 CALME (Émeraude / Vert d'eau) */
 html[data-mood="calme"] {
   --primary-color: #10b981;
   --bg-page-light: #f0fdf4;
   --bg-page-dark: #022c22;
+  --font-main: 'Outfit', sans-serif;
 }
 html[data-mood="calme"] .background-gradient { background: linear-gradient(135deg,#f0fdf4 0%,#dcfce7 50%,#e0f2fe 100%); }
 
@@ -52,6 +61,7 @@ html[data-mood="bien"] {
   --primary-color: #ec4899;
   --bg-page-light: #fdf2f8;
   --bg-page-dark: #3b0726; 
+  --font-main: 'Outfit', sans-serif;
 }
 html[data-mood="bien"] .background-gradient { background: linear-gradient(135deg,#fdf4ff 0%,#fae8ff 50%,#fce7f3 100%); }
 
@@ -60,6 +70,7 @@ html[data-mood="triste"] {
   --primary-color: #64748b;
   --bg-page-light: #f8fafc;
   --bg-page-dark: #0f172a;
+  --font-main: 'Lora', serif; /* Police de roman, mélancolique */
 }
 html[data-mood="triste"] .background-gradient { background: linear-gradient(135deg,#eff6ff 0%,#dbeafe 50%,#e0e7ff 100%); }
 
@@ -68,6 +79,7 @@ html[data-mood="anxieux"] {
   --primary-color: #8b5cf6;
   --bg-page-light: #f5f3ff;
   --bg-page-dark: #2e1065;
+  --font-main: 'Space Mono', monospace; /* Police mécanique/stressée */
 }
 html[data-mood="anxieux"] .background-gradient { background: linear-gradient(135deg,#f8fafc 0%,#f1f5f9 50%,#e2e8f0 100%); }
 
@@ -76,13 +88,31 @@ html[data-mood="colere"], html[data-mood="colère"] {
   --primary-color: #ef4444;
   --bg-page-light: #fef2f2;
   --bg-page-dark: #450a0a; 
+  --font-main: 'Montserrat', sans-serif; /* Police très grasse et large */
 }
 html[data-mood="colere"] .background-gradient, html[data-mood="colère"] .background-gradient { background: linear-gradient(135deg,#fff7ed 0%,#ffedd5 50%,#fef08a 100%); }
+
+/* ── 2.5 FORÇAGE DE LA POLICE (Choix de l'utilisateur) ── */
+/* Le !important permet d'écraser la police de l'humeur */
+html[data-font="outfit"]     { --font-main: 'Outfit', sans-serif !important; }
+html[data-font="lora"]       { --font-main: 'Lora', serif !important; }
+html[data-font="spacemono"]  { --font-main: 'Space Mono', monospace !important; }
+html[data-font="montserrat"] { --font-main: 'Montserrat', sans-serif !important; }
+html[data-font="dancing"]    { --font-main: 'Dancing Script', cursive !important; }
+/* Si data-font="auto", c'est l'humeur qui décide ! */
 
 /* ── 3. APPLICATION DU FOND DE PAGE SELON LE THÈME ── */
 html[data-theme="light"] { --bg-page: var(--bg-page-light); }
 html[data-theme="dark"]  { --bg-page: var(--bg-page-dark); }
 html[data-theme="glass"] { --bg-page: transparent; } 
+
+/* Dégradés spécifiques pour la bannière de profil */
+html { --cover-bg: linear-gradient(135deg, #34d399, #10b981); }
+html[data-mood="calme"] { --cover-bg: linear-gradient(135deg, #34d399, #10b981); }
+html[data-mood="bien"] { --cover-bg: linear-gradient(135deg, #f472b6, #ec4899); }
+html[data-mood="triste"] { --cover-bg: linear-gradient(135deg, #94a3b8, #64748b); }
+html[data-mood="anxieux"] { --cover-bg: linear-gradient(135deg, #a78bfa, #8b5cf6); }
+html[data-mood="colere"], html[data-mood="colère"] { --cover-bg: linear-gradient(135deg, #f87171, #ef4444); }
 
 /* Couleurs fixes pour les tags */
 html {
@@ -95,8 +125,11 @@ html {
 /* 🚀 APPLICATION GLOBALE */
 /* ───────────────────────────────────────────────────────── */
 
+body, input, textarea, select, button {
+  font-family: var(--font-main);
+}
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   background-color: var(--bg-page);
   color: var(--text-primary);
   overflow: hidden;
@@ -130,7 +163,6 @@ h1, h2, h3, .header-title, .logo-text, .discussion-title, .stat-value {
 }
 
 /* ── 🧱 CARTES ET LAYOUTS (Polymorphes) ── */
-/* 🔴 CORRECTION ICI : Ajout de #boardSearch pour qu'il devienne sombre ! */
 .sidebar, .mood-section, .stat-card, .discussion-card, .bottom-banner, #boardModal > div, .modern-input, .board-select, #boardSearch {
     background: var(--bg-element);
     backdrop-filter: var(--glass-blur);
