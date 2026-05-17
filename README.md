@@ -28,6 +28,7 @@ Le projet repose sur un backend **Go**, une base **SQLite**, un frontend **HTML/
 ## Table Des Matieres
 
 - [Experience Produit](#experience-produit)
+- [Pourquoi Zukuk ?](#pourquoi-zukuk-notre-vision)
 - [Galerie Des Captures](#galerie-des-captures)
 - [Fonctionnalites](#fonctionnalites)
 - [Stack Technique](#stack-technique)
@@ -39,6 +40,23 @@ Le projet repose sur un backend **Go**, une base **SQLite**, un frontend **HTML/
 - [Securite](#securite)
 - [Roadmap](#roadmap)
 - [Philosophie](#philosophie)
+
+<a id="pourquoi-zukuk-notre-vision"></a>
+
+## 🌍 Pourquoi Zukuk ? (Notre Vision)
+
+Dans un monde qui va de plus en plus vite, nous avons fait un constat simple et un peu triste : les véritables interactions humaines se réduisent de jour en jour. Il est devenu tellement plus facile, et parfois plus rassurant, de rester caché derrière nos écrans plutôt que de se parler à cœur ouvert.
+
+Les écrans ont tendance à nous isoler, mais nous sommes convaincus qu'ils peuvent aussi nous rassembler si nous construisons les bons outils. **Zukuk n'est pas un réseau social de plus conçu pour scroller à l'infini.** C'est un refuge numérique. Un espace pensé pour que la technologie se mette au service de l'humain, de l'écoute, de la santé mentale et de la reconnexion, virtuelle d'abord, puis physique grâce aux activités locales.
+
+Ce projet a été imaginé, designé et développé avec passion par une équipe de quatre personnes :
+
+- **Edvige Houmasse**
+- **Ryan Elqali**
+- **Ilian Touazi**
+- **Kerem Uysal**
+
+Merci de faire vivre ce projet et de contribuer à un web plus humain. Prenez soin de vous ! 💙
 
 ## Experience Produit
 
