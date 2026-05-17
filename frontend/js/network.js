@@ -8,24 +8,33 @@ let searchTimer = null;
 // ─────────────────────────────────────────────────────────────────────────────
 
 // 1. Anti-scintillement : Appliquer le thème local IMMÉDIATEMENT
-const savedTheme = localStorage.getItem('zukuk_theme') || 'light';
-document.body.setAttribute('data-theme', savedTheme);
+const savedTheme = localStorage.getItem('zukuk_theme') || 'glass';
+const savedMood = localStorage.getItem('zukuk_mood') || 'calme';
+document.documentElement.setAttribute('data-theme', savedTheme);
+document.documentElement.setAttribute('data-mood', savedMood);
 
-      // 2. Synchronisation BDD : Vérifier le vrai thème de l'utilisateur au chargement
+// 2. Synchronisation BDD : Vérifier le vrai thème et la vraie humeur
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         const res = await fetch(`${API_BASE}/settings/`, { credentials: 'include' });
         if (res.ok) {
             const settings = await res.json();
             if (settings.theme && settings.theme !== savedTheme) {
-                // Si la BDD a un thème différent (ex: connexion sur un nouveau PC), on met à jour
-                document.body.setAttribute('data-theme', settings.theme);
+                document.documentElement.setAttribute('data-theme', settings.theme);
                 localStorage.setItem('zukuk_theme', settings.theme);
             }
         }
-    } catch (e) {
-        // Utilisateur non connecté, on garde le thème local
-    }
+
+        const moodRes = await fetch(`${API_BASE}/me/mood-history`, { credentials: 'include' });
+        if (moodRes.ok) {
+            const moodData = await moodRes.json();
+            if (moodData.history && moodData.history.length > 0) {
+                const currentMood = moodData.history[0].mood.toLowerCase().replace('è', 'e');
+                document.documentElement.setAttribute('data-mood', currentMood);
+                localStorage.setItem('zukuk_mood', currentMood);
+            }
+        }
+    } catch (e) {}
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -61,11 +70,11 @@ async function loadMembers() {
 // RENDU
 // ─────────────────────────────────────────────────────────────────────────────
 const MOOD_EMOJIS = {
-  'Bien': '😊', 'Calme': '😌', 'Triste': '😢', 'Anxieux': '😰', 'Colère': '😡',
+  'Bien': '😊', 'Calme': '😌', 'Triste': '😢', 'Anxieux': '😰', 'Colère': '😡', 'Colere': '😡'
 };
 const MOOD_CLASSES = {
   'Bien': 'mood-bien', 'Calme': 'mood-calme', 'Triste': 'mood-triste',
-  'Anxieux': 'mood-anxieux', 'Colère': 'mood-colère',
+  'Anxieux': 'mood-anxieux', 'Colère': 'mood-colère', 'Colere': 'mood-colère'
 };
 
 const AVATAR_PALETTES = [
@@ -90,7 +99,6 @@ function renderMembers(members) {
   const statPosts = document.getElementById('statPosts');
   const statLikes = document.getElementById('statLikes');
 
-  // Mise à jour stats globales
   if (badge)     badge.textContent     = `${members.length} membre${members.length !== 1 ? 's' : ''}`;
   if (statMem)   statMem.textContent   = members.length;
   if (statPosts) statPosts.textContent = members.reduce((s, m) => s + m.posts_count, 0);
@@ -114,8 +122,7 @@ function buildMemberCard(m, index) {
   const moodEmoji  = MOOD_EMOJIS[m.current_mood] || '';
   const delay      = `animation-delay:${index * 40}ms`;
 
-  // 🔴 C'EST CETTE LIGNE QUI RÈGLE TON PROBLÈME (Ajout de http://localhost:8081)
-const avatarHTML = m.avatar_url
+  const avatarHTML = m.avatar_url
     ? `<img src="${m.avatar_url.startsWith('http') ? m.avatar_url : (window.location.hostname === 'localhost' ? 'http://localhost:8081' : '') + m.avatar_url}" alt="avatar">`
     : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${bgColor};color:${textColor};font-weight:700;font-size:18px;border-radius:50%">${initials(m.pseudo)}</div>`;
 
@@ -135,7 +142,7 @@ const avatarHTML = m.avatar_url
             ${m.posts_count}
           </span>
           <span class="member-stat">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2-2z"></path></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
             ${m.comments_count}
           </span>
           <span class="member-stat">
@@ -156,19 +163,16 @@ const avatarHTML = m.avatar_url
 // EVENT LISTENERS
 // ─────────────────────────────────────────────────────────────────────────────
 function setupListeners() {
-  // Navigation sidebar
   document.querySelectorAll('.nav-item[data-href]').forEach(btn => {
     btn.addEventListener('click', () => { window.location.href = btn.dataset.href; });
   });
 
-  // Recherche (debounced 300ms)
   const searchInput = document.getElementById('networkSearch');
   if (searchInput) {
     searchInput.addEventListener('input', () => {
       clearTimeout(searchTimer);
       searchTimer = setTimeout(loadMembers, 300);
     });
-    // Effacer avec Escape
     searchInput.addEventListener('keydown', e => {
       if (e.key === 'Escape') { searchInput.value = ''; loadMembers(); }
     });

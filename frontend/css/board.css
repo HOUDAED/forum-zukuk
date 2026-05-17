@@ -51,7 +51,7 @@ html[data-mood="calme"] .background-gradient { background: linear-gradient(135de
 html[data-mood="bien"] {
   --primary-color: #ec4899;
   --bg-page-light: #fdf2f8;
-  --bg-page-dark: #3b0726; /* Noir teinté de bordeaux/rose */
+  --bg-page-dark: #3b0726; 
 }
 html[data-mood="bien"] .background-gradient { background: linear-gradient(135deg,#fdf4ff 0%,#fae8ff 50%,#fce7f3 100%); }
 
@@ -75,14 +75,14 @@ html[data-mood="anxieux"] .background-gradient { background: linear-gradient(135
 html[data-mood="colere"], html[data-mood="colère"] {
   --primary-color: #ef4444;
   --bg-page-light: #fef2f2;
-  --bg-page-dark: #450a0a; /* Noir teinté de rouge sang */
+  --bg-page-dark: #450a0a; 
 }
 html[data-mood="colere"] .background-gradient, html[data-mood="colère"] .background-gradient { background: linear-gradient(135deg,#fff7ed 0%,#ffedd5 50%,#fef08a 100%); }
 
 /* ── 3. APPLICATION DU FOND DE PAGE SELON LE THÈME ── */
 html[data-theme="light"] { --bg-page: var(--bg-page-light); }
 html[data-theme="dark"]  { --bg-page: var(--bg-page-dark); }
-html[data-theme="glass"] { --bg-page: transparent; } /* Laisse transparaître le dégradé en-dessous */
+html[data-theme="glass"] { --bg-page: transparent; } 
 
 /* Couleurs fixes pour les tags */
 html {
@@ -100,7 +100,7 @@ body {
   background-color: var(--bg-page);
   color: var(--text-primary);
   overflow: hidden;
-  transition: background-color 0.8s ease, color 0.4s ease; /* Le fond de page fait une transition douce */
+  transition: background-color 0.8s ease, color 0.4s ease; 
 }
 
 .app-container { display: flex; height: 100vh; width: 100%; }
@@ -130,7 +130,8 @@ h1, h2, h3, .header-title, .logo-text, .discussion-title, .stat-value {
 }
 
 /* ── 🧱 CARTES ET LAYOUTS (Polymorphes) ── */
-.sidebar, .mood-section, .stat-card, .discussion-card, .bottom-banner, #boardModal > div, .modern-input, .board-select {
+/* 🔴 CORRECTION ICI : Ajout de #boardSearch pour qu'il devienne sombre ! */
+.sidebar, .mood-section, .stat-card, .discussion-card, .bottom-banner, #boardModal > div, .modern-input, .board-select, #boardSearch {
     background: var(--bg-element);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
@@ -201,6 +202,7 @@ h1, h2, h3, .header-title, .logo-text, .discussion-title, .stat-value {
 .search-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
 .search-input-wrap { flex: 1; min-width: 180px; position: relative; }
 .search-input-wrap svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-secondary); pointer-events: none; }
+
 #boardSearch, .board-select, .modern-input { width: 100%; padding: 11px 14px 11px 38px; border-radius: 12px; font-size: 0.9rem; color: var(--text-primary); outline: none; }
 .board-select { width: auto; padding: 10px 12px; }
 .modern-input { padding: 12px 14px; }

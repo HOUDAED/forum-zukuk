@@ -1,0 +1,93 @@
+/* ── Nettoyage du fond de page ── */
+body { 
+    padding-top: 0 !important; 
+    margin: 0; 
+    overflow: hidden; 
+    background: var(--bg-page) !important; /* Force le fond sombre/clair */
+    color: var(--text-primary) !important; 
+}
+
+/* ── Protège le logo de la sidebar contre auth.css ── */
+.sidebar .logo-container { margin-bottom: 0 !important; }
+.sidebar .logo-icon {
+    width: 24px !important;
+    height: 24px !important;
+    background: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+.sidebar .logo-icon::after { display: none !important; }
+
+/* ── 🎨 TRADUCTION POLYMORPHE (Assure le mode Sombre/Clair) ── */
+.profile-cover {
+    background: linear-gradient(135deg, var(--grad-1), var(--grad-2)) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+.profile-avatar-large {
+    background: var(--bg-page) !important;
+    border-color: var(--bg-element) !important;
+}
+
+/* Force les cartes à s'assombrir selon le thème */
+.bento-card {
+    background: var(--bg-element) !important;
+    border-color: var(--border-color) !important;
+    backdrop-filter: var(--glass-blur) !important;
+    -webkit-backdrop-filter: var(--glass-blur) !important;
+    box-shadow: var(--shadow-md) !important;
+}
+
+.bento-header { color: var(--text-primary) !important; }
+.bento-header svg { color: var(--primary-color) !important; }
+
+/* ── Formulaires et Inputs ── */
+.modern-input-group label { color: var(--text-secondary) !important; }
+
+.modern-input {
+    background: var(--bg-page) !important;
+    color: var(--text-primary) !important;
+    border-color: transparent !important;
+}
+
+.modern-input:focus {
+    background: var(--bg-element) !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 4px rgba(0,0,0,0.05) !important;
+}
+
+/* ── Onglets et Listes (Activité) ── */
+.segmented-control { background: var(--bg-page) !important; }
+.seg-btn { color: var(--text-secondary) !important; }
+.seg-btn.active { 
+    background: var(--bg-element) !important; 
+    color: var(--primary-color) !important; 
+    box-shadow: var(--shadow-sm) !important; 
+}
+
+.bento-list-item {
+    background: var(--bg-element) !important;
+    border-color: var(--border-color) !important;
+}
+.bento-list-item:hover { 
+    border-color: var(--primary-color) !important; 
+    transform: translateY(-2px); 
+}
+
+/* ── Boutons d'action ── */
+.btn-primary { 
+    background: var(--primary-color) !important; 
+    color: white !important; 
+    background-image: none !important; 
+}
+
+.btn-secondary { 
+    background: var(--bg-element-hover) !important; 
+    color: var(--text-primary) !important; 
+    border: 1px solid var(--border-color) !important; 
+}
+
+.btn-danger { 
+    background: rgba(239, 68, 68, 0.1) !important; 
+    color: var(--danger-color) !important; 
+}

@@ -6,14 +6,14 @@
     <title>Zukuk - La communauté</title>
     <link rel="stylesheet" href="/frontend/css/board.css">
     <script>
-        // Applique instantanément le thème et l'humeur avant même que la page ne charge !
+        // Applique instantanément le thème et l'humeur
         const t = localStorage.getItem('zukuk_theme') || 'glass';
         const m = localStorage.getItem('zukuk_mood') || 'calme';
         document.documentElement.setAttribute('data-theme', t);
         document.documentElement.setAttribute('data-mood', m);
     </script>
     <style>
-        body { overflow: auto; }
+        body { overflow: auto; padding-top: 0; margin: 0; }
 
         /* ── Members grid ── */
         .network-wrapper {
@@ -23,153 +23,107 @@
         }
 
         /* ── Search bar ── */
-        .network-search-wrap {
-            position: relative;
-        }
+        .network-search-wrap { position: relative; }
         .network-search-wrap svg {
             position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 18px; height: 18px;
-            color: #9ca3af;
-            pointer-events: none;
+            left: 16px; top: 50%; transform: translateY(-50%);
+            width: 18px; height: 18px; color: var(--text-secondary); pointer-events: none;
         }
         #networkSearch {
-            width: 100%;
-            padding: 13px 16px 13px 44px;
-            border: 1.5px solid #e5e7eb;
-            border-radius: 16px;
-            font-size: 0.95rem;
-            font-family: inherit;
-            background: rgba(255,255,255,0.9);
-            color: #1f2937;
-            transition: border-color .2s, box-shadow .2s;
-            backdrop-filter: blur(8px);
+            width: 100%; padding: 13px 16px 13px 44px;
+            border: 1.5px solid var(--border-color); border-radius: 16px;
+            font-size: 0.95rem; font-family: inherit;
+            background: var(--bg-element); color: var(--text-primary);
+            transition: border-color .3s, box-shadow .3s, background .3s;
         }
         #networkSearch:focus {
-            outline: none;
-            border-color: #818cf8;
-            box-shadow: 0 0 0 4px rgba(129,140,248,0.1);
+            outline: none; border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(0,0,0,0.05); background: var(--bg-element-hover);
         }
 
         /* ── Member card ── */
         .member-card {
-            background: rgba(255,255,255,0.75);
-            backdrop-filter: blur(12px);
-            border-radius: 20px;
-            padding: 18px 20px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            border: 1px solid rgba(255,255,255,0.85);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
-            cursor: pointer;
-            transition: all .3s cubic-bezier(.4,0,.2,1);
-            text-decoration: none;
+            background: var(--bg-element);
+            backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+            border-radius: 20px; padding: 18px 20px;
+            display: flex; align-items: center; gap: 16px;
+            border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);
+            cursor: pointer; transition: all .3s cubic-bezier(.4,0,.2,1); text-decoration: none;
         }
         .member-card:hover {
-            transform: translateY(-3px);
-            background: rgba(255,255,255,0.95);
-            box-shadow: 0 12px 30px rgba(110,231,183,0.15);
-            border-color: #d1fae5;
+            transform: translateY(-3px); background: var(--bg-element-hover);
+            box-shadow: var(--shadow-md); border-color: var(--primary-color);
         }
 
         .member-avatar {
-            width: 52px; height: 52px;
-            border-radius: 50%;
+            width: 52px; height: 52px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 18px; font-weight: 700;
-            flex-shrink: 0; overflow: hidden;
+            font-size: 18px; font-weight: 700; flex-shrink: 0; overflow: hidden;
+            background: var(--bg-page); color: var(--text-secondary); border: 1px solid var(--border-color);
         }
         .member-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 
         .member-info { flex: 1; min-width: 0; }
         .member-name {
-            font-size: 1rem; font-weight: 700; color: #1f2937;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            font-size: 1rem; font-weight: 700; color: var(--text-primary);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.3s;
         }
+        .member-card:hover .member-name { color: var(--primary-color); }
+        
         .member-mood {
             display: inline-flex; align-items: center; gap: 5px;
-            padding: 4px 10px; border-radius: 20px;
-            font-size: 0.72rem; font-weight: 600;
-            margin-top: 4px;
+            padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; margin-top: 4px;
         }
-        .member-stats {
-            display: flex; gap: 12px; margin-top: 6px;
-        }
-        .member-stat {
-            display: flex; align-items: center; gap: 4px;
-            font-size: 0.78rem; color: #6b7280;
-        }
+        
+        .member-stats { display: flex; gap: 12px; margin-top: 6px; }
+        .member-stat { display: flex; align-items: center; gap: 4px; font-size: 0.78rem; color: var(--text-secondary); }
         .member-stat svg { width: 13px; height: 13px; }
 
-        .member-arrow {
-            color: #d1d5db; flex-shrink: 0;
-        }
+        .member-arrow { color: var(--border-color); flex-shrink: 0; transition: color 0.3s; }
+        .member-card:hover .member-arrow { color: var(--primary-color); }
         .member-arrow svg { width: 18px; height: 18px; }
 
         /* ── Loader ── */
         .spinner {
-            width: 32px; height: 32px;
-            border: 3px solid #e0e7ff;
-            border-top-color: #818cf8;
-            border-radius: 50%;
-            animation: spin .8s linear infinite;
-            margin: 40px auto;
+            width: 32px; height: 32px; border: 3px solid var(--border-color);
+            border-top-color: var(--primary-color); border-radius: 50%;
+            animation: spin .8s linear infinite; margin: 40px auto;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         /* ── Empty state ── */
-        .empty-state {
-            text-align: center; padding: 48px 20px; color: #9ca3af;
-        }
+        .empty-state { text-align: center; padding: 48px 20px; color: var(--text-secondary); }
         .empty-state .emoji { font-size: 2.5rem; margin-bottom: 12px; }
 
-        /* ── Mood colors ── */
-        .mood-bien     { background: #fae8ff; color: #7c3aed; }
-        .mood-calme    { background: #dcfce7; color: #166534; }
-        .mood-triste   { background: #dbeafe; color: #1d4ed8; }
-        .mood-anxieux  { background: #f1f5f9; color: #475569; }
-        .mood-colère   { background: #fef3c7; color: #92400e; }
-        .mood-default  { background: #f3f4f6; color: #6b7280; }
+        /* ── Mood colors (Adaptées Sombre/Clair) ── */
+        .mood-bien     { background: rgba(236, 72, 153, 0.15); color: #ec4899; }
+        .mood-calme    { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+        .mood-triste   { background: rgba(100, 116, 139, 0.15); color: #64748b; }
+        .mood-anxieux  { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+        .mood-colère   { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+        .mood-default  { background: var(--bg-element-hover); color: var(--text-secondary); }
 
         /* ── Members count header ── */
-        .network-header-row {
-            display: flex; align-items: center; justify-content: space-between;
-        }
+        .network-header-row { display: flex; align-items: center; justify-content: space-between; }
         .members-badge {
-            background: rgba(255,255,255,0.7);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255,255,255,0.8);
-            border-radius: 12px;
-            padding: 6px 14px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #818cf8;
+            background: var(--bg-element); backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--border-color); border-radius: 12px;
+            padding: 6px 14px; font-size: 0.8rem; font-weight: 600; color: var(--primary-color);
         }
 
         /* ── Stats bar ── */
-        .network-stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-        }
+        .network-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
         .network-stat-card {
-            background: rgba(255,255,255,0.75);
-            border-radius: 16px;
-            padding: 14px 16px;
-            display: flex; flex-direction: column; gap: 4px;
-            border: 1px solid rgba(255,255,255,0.85);
+            background: var(--bg-element); border-radius: 16px; padding: 14px 16px;
+            display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--border-color);
+            transition: all 0.3s;
         }
-        .network-stat-value { font-size: 1.4rem; font-weight: 700; color: #1f2937; }
-        .network-stat-label { font-size: 0.75rem; color: #9ca3af; font-weight: 500; }
+        .network-stat-card:hover { border-color: var(--primary-color); transform: translateY(-2px); }
+        .network-stat-value { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); transition: color 0.3s;}
+        .network-stat-card:hover .network-stat-value { color: var(--primary-color); }
+        .network-stat-label { font-size: 0.75rem; color: var(--text-secondary); font-weight: 500; }
 
-        /* slideUp animation for new cards */
-        @keyframes slideUp {
-            from { opacity:0; transform:translateY(10px); }
-            to   { opacity:1; transform:translateY(0); }
-        }
+        @keyframes slideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
     </style>
 </head>
 <body>
@@ -206,8 +160,8 @@
                 <div class="network-wrapper">
                     <div class="network-header-row">
                         <div class="section-header" style="margin-bottom:0">
-                            <div class="section-indicator" style="background:#6ee7b7"></div>
-                            <h2>Membres</h2>
+                            <div class="section-indicator" style="background:var(--primary-color)"></div>
+                            <h2 style="color:var(--text-primary)">Membres</h2>
                         </div>
                         <span class="members-badge" id="membersCount">— membres</span>
                     </div>

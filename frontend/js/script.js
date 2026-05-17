@@ -5,31 +5,26 @@ const $ = (selector) => document.querySelector(selector);
 const EYE_ICON     = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
 const EYE_OFF_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
 
-
 // ─────────────────────────────────────────────────────────────────────────────
 // 🎨 SYSTÈME DE THÈME GLOBAL ZUKUK
 // ─────────────────────────────────────────────────────────────────────────────
 
-// 1. Anti-scintillement : Appliquer le thème local IMMÉDIATEMENT
-const savedTheme = localStorage.getItem('zukuk_theme') || 'light';
-document.body.setAttribute('data-theme', savedTheme);
+const savedTheme = localStorage.getItem('zukuk_theme') || 'glass';
+document.documentElement.setAttribute('data-theme', savedTheme);
 
-// 2. Synchronisation BDD : Vérifier le vrai thème de l'utilisateur au chargement
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        const res = await fetch('http://localhost:8081/api/settings/', { credentials: 'include' });
+        const res = await fetch(`${API_BASE}/api/settings/`, { credentials: 'include' });
         if (res.ok) {
             const settings = await res.json();
             if (settings.theme && settings.theme !== savedTheme) {
-                // Si la BDD a un thème différent (ex: connexion sur un nouveau PC), on met à jour
-                document.body.setAttribute('data-theme', settings.theme);
+                document.documentElement.setAttribute('data-theme', settings.theme);
                 localStorage.setItem('zukuk_theme', settings.theme);
             }
         }
-    } catch (e) {
-        // Utilisateur non connecté, on garde le thème local
-    }
+    } catch (e) {}
 });
+
 function wrapInlinePasswords() {
     document.querySelectorAll('input[type="password"].inline-input').forEach(input => {
         if (input.parentElement.classList.contains('password-wrapper')) return;
@@ -38,7 +33,6 @@ function wrapInlinePasswords() {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'toggle-password';
-        btn.setAttribute('aria-label', 'Afficher le mot de passe');
         btn.innerHTML = EYE_ICON;
         btn.addEventListener('click', () => {
             const show = input.type === 'password';
@@ -59,7 +53,6 @@ function wrapModernPasswords() {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'modern-toggle-password';
-        btn.setAttribute('aria-label', 'Afficher le mot de passe');
         btn.innerHTML = EYE_ICON;
         btn.addEventListener('click', () => {
             const show = input.type === 'password';
@@ -84,9 +77,7 @@ if (dynamicInputs.length > 0) {
     dynamicInputs.forEach((input) => {
         const adjustWidth = function () {
             let text = this.value || this.placeholder;
-            if (this.type === "password" && this.value) {
-                text = "•".repeat(this.value.length);
-            }
+            if (this.type === "password" && this.value) text = "•".repeat(this.value.length);
             const metrics = canvasContext.measureText(text);
             this.style.width = `${Math.max(160, metrics.width + 18)}px`;
         };
@@ -99,18 +90,15 @@ function showMessage(element, text, isError = false) {
     if (!element) return;
     element.hidden = false;
     element.textContent = text;
-    element.style.borderColor = isError ? "#fecaca" : "#bbf7d0";
-    element.style.background  = isError ? "#fef2f2" : "#f0fdf4";
-    element.style.color       = isError ? "#991b1b" : "#166534";
+    element.style.borderColor = isError ? "var(--danger-color)" : "var(--success-color)";
+    element.style.background  = isError ? "rgba(239, 68, 68, 0.1)" : "rgba(16, 185, 129, 0.1)";
+    element.style.color       = isError ? "var(--danger-color)" : "var(--success-color)";
 }
 
 async function api(path, options = {}) {
     const response = await fetch(`${API_BASE}${path}`, {
         credentials: "include",
-        headers: {
-            "Content-Type": "application/json",
-            ...(options.headers || {}),
-        },
+        headers: { "Content-Type": "application/json", ...(options.headers || {}) },
         ...options,
     });
     const data = await response.json().catch(() => ({}));
@@ -120,9 +108,7 @@ async function api(path, options = {}) {
 
 async function uploadFile(path, formData) {
     const response = await fetch(`${API_BASE}${path}`, {
-        method: "POST",
-        credentials: "include",
-        body: formData,
+        method: "POST", credentials: "include", body: formData,
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || "Erreur upload.");
@@ -130,18 +116,13 @@ async function uploadFile(path, formData) {
 }
 
 function initHome() {
-    $("#home-login")?.addEventListener("click", () => {
-        window.location.href = "/login";
-    });
-    $("#home-join")?.addEventListener("click", () => {
-        window.location.href = "/register";
-    });
+    $("#home-login")?.addEventListener("click", () => { window.location.href = "/login"; });
+    $("#home-join")?.addEventListener("click", () => { window.location.href = "/register"; });
 }
 
 function initLogin() {
     const button = $("#login-submit");
     if (!button) return;
-
     const submit = async () => {
         const message = $("#login-message");
         try {
@@ -158,17 +139,13 @@ function initLogin() {
             showMessage(message, error.message, true);
         }
     };
-
     button.addEventListener("click", submit);
-    $("#login-password")?.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") submit();
-    });
+    $("#login-password")?.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
 }
 
 function initRegister() {
     const button = $("#register-submit");
     if (!button) return;
-
     button.addEventListener("click", async () => {
         const message = $("#register-message");
         try {
@@ -197,13 +174,12 @@ async function loadProfile() {
 
     if (pseudoInput) pseudoInput.value = me.pseudo || "";
     if (emailInput)  emailInput.value  = me.email  || "";
-    // 🔥 AJOUT DE LA BIO AU CHARGEMENT 🔥
     if (bioInput)    bioInput.value    = me.bio    || "";
 
     const avatar = $("#profile-avatar");
     if (avatar) {
         if (me.avatar_url) {
-            avatar.src = `${API_BASE}${me.avatar_url}`;
+            avatar.src = `${API_BASE}${me.avatar_url.replace('/api', '')}`;
         } else {
             const seed = me.pseudo || "ZukukUser";
             avatar.src = `https://api.dicebear.com/7.x/notionists/svg?seed=${seed}&backgroundColor=eef2ff`;
@@ -218,54 +194,54 @@ async function loadProfile() {
             connectionsList.innerHTML = "";
             if (history && history.length > 0) {
                 history.forEach((conn, index) => {
-                    const date = new Date(conn.created_at).toLocaleString('fr-FR', {
-                        day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
-                    }).replace('.', '');
+                    const date = new Date(conn.created_at).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).replace('.', '');
                     let device = "Appareil inconnu";
-                    if (conn.user_agent.includes("Windows"))                               device = "PC Windows";
-                    else if (conn.user_agent.includes("Mac"))                              device = "Mac";
-                    else if (conn.user_agent.includes("Linux"))                            device = "Linux";
-                    else if (conn.user_agent.includes("Android"))                          device = "Android";
+                    if (conn.user_agent.includes("Windows")) device = "PC Windows";
+                    else if (conn.user_agent.includes("Mac")) device = "Mac";
+                    else if (conn.user_agent.includes("Linux")) device = "Linux";
+                    else if (conn.user_agent.includes("Android")) device = "Android";
                     else if (conn.user_agent.includes("iPhone") || conn.user_agent.includes("iPad")) device = "iPhone";
 
                     const statusBadge = conn.status === "Réussie"
-                        ? '<span class="badge badge-success">Réussie</span>'
-                        : '<span class="badge badge-error">Échouée</span>';
+                        ? '<span class="badge badge-success" style="background:rgba(16,185,129,0.1); color:var(--success-color);">Réussie</span>'
+                        : '<span class="badge badge-error" style="background:rgba(239,68,68,0.1); color:var(--danger-color);">Échouée</span>';
+                    
                     const isLatest = (index === 0 && conn.status === "Réussie")
-                        ? '<span style="color:var(--primary);font-weight:700;font-size:0.8rem;margin-left:auto;">Actuelle</span>'
+                        ? '<span style="color:var(--primary-color);font-weight:700;font-size:0.8rem;margin-left:auto;">Actuelle</span>'
                         : '';
 
+                    // 🔴 Correction ici : on utilise --text-primary au lieu de --text-dark
                     connectionsList.innerHTML += `
                         <li class="bento-list-item">
                             <div style="display:flex;align-items:center;gap:12px;">
-                                <strong style="color:var(--text-dark);">${device}</strong>
+                                <strong style="color:var(--text-primary);">${device}</strong>
                                 ${statusBadge}
                                 ${isLatest}
                             </div>
-                            <div style="display:flex;gap:16px;font-size:0.85rem;color:var(--text-gray);margin-top:4px;">
+                            <div style="display:flex;gap:16px;font-size:0.85rem;color:var(--text-secondary);margin-top:4px;">
                                 <span style="display:flex;align-items:center;gap:4px;">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                                     ${conn.ip_address}
                                 </span>
                                 <span style="display:flex;align-items:center;gap:4px;">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                                     ${date}
                                 </span>
                             </div>
                         </li>`;
                 });
             } else {
-                connectionsList.innerHTML = `<li style="color:var(--text-gray);">Aucun historique.</li>`;
+                connectionsList.innerHTML = `<li style="color:var(--text-secondary);">Aucun historique.</li>`;
             }
         } catch {
-            connectionsList.innerHTML = `<li style="color:#991b1b;">Impossible de charger.</li>`;
+            connectionsList.innerHTML = `<li style="color:var(--danger-color);">Impossible de charger.</li>`;
         }
     }
 
-    const tabPosts    = $("#tab-posts");
+    const tabPosts = $("#tab-posts");
     const tabComments = $("#tab-comments");
-    const listPosts   = $("#user-posts-list");
-    const listComments= $("#user-comments-list");
+    const listPosts = $("#user-posts-list");
+    const listComments = $("#user-comments-list");
 
     if (tabPosts && tabComments) {
         tabPosts.addEventListener("click", () => {
@@ -291,37 +267,38 @@ async function loadProfile() {
             if (activity.posts && activity.posts.length > 0) {
                 activity.posts.forEach(post => {
                     const date = new Date(post.created_at).toLocaleDateString('fr-FR');
+                    // 🔴 Correction ici : on utilise --text-primary au lieu de --text-dark
                     listPosts.innerHTML += `
                         <li class="bento-list-item" style="flex-direction:row;justify-content:space-between;align-items:center;">
                             <div style="display:flex;flex-direction:column;gap:4px;">
-                                <strong style="color:var(--text-dark);">${post.title}</strong>
-                                <span style="font-size:0.8rem;color:var(--text-gray);">Publié le ${date}</span>
+                                <strong style="color:var(--text-primary);">${post.title}</strong>
+                                <span style="font-size:0.8rem;color:var(--text-secondary);">Publié le ${date}</span>
                             </div>
                         </li>`;
                 });
             } else {
-                listPosts.innerHTML = `<li style="color:var(--text-gray);">Aucune discussion publiée.</li>`;
+                listPosts.innerHTML = `<li style="color:var(--text-secondary);">Aucune discussion publiée.</li>`;
             }
 
             if (activity.comments && activity.comments.length > 0) {
                 activity.comments.forEach(comment => {
                     const date = new Date(comment.created_at).toLocaleDateString('fr-FR');
+                    // 🔴 Correction ici : on utilise --text-primary au lieu de --text-dark
                     listComments.innerHTML += `
                         <li class="bento-list-item">
-                            <span style="font-size:0.8rem;color:var(--primary);font-weight:600;">Sur : ${comment.post_title}</span>
-                            <p style="font-size:0.95rem;color:var(--text-dark);margin:0;">"${comment.content}"</p>
-                            <span style="font-size:0.8rem;color:var(--text-gray);">Le ${date}</span>
+                            <span style="font-size:0.8rem;color:var(--primary-color);font-weight:600;">Sur : ${comment.post_title}</span>
+                            <p style="font-size:0.95rem;color:var(--text-primary);margin:4px 0;">"${comment.content}"</p>
+                            <span style="font-size:0.8rem;color:var(--text-secondary);">Le ${date}</span>
                         </li>`;
                 });
             } else {
-                listComments.innerHTML = `<li style="color:var(--text-gray);">Aucun commentaire écrit.</li>`;
+                listComments.innerHTML = `<li style="color:var(--text-secondary);">Aucun commentaire écrit.</li>`;
             }
         } catch {
-            listPosts.innerHTML    = `<li style="color:#991b1b;">Impossible de charger.</li>`;
-            listComments.innerHTML = `<li style="color:#991b1b;">Impossible de charger.</li>`;
+            listPosts.innerHTML    = `<li style="color:var(--danger-color);">Impossible de charger.</li>`;
+            listComments.innerHTML = `<li style="color:var(--danger-color);">Impossible de charger.</li>`;
         }
     }
-
     return me;
 }
 
@@ -329,9 +306,7 @@ function initProfile() {
     const saveButton = $("#profile-save");
     if (!saveButton) return;
 
-    loadProfile().catch(() => {
-        window.location.href = "/login";
-    });
+    loadProfile().catch(() => { window.location.href = "/login"; });
 
     saveButton.addEventListener("click", async () => {
         const message = $("#profile-message");
@@ -343,9 +318,8 @@ function initProfile() {
         const email = $("#profile-email")?.value?.trim();
         if (email) payload.email = email;
 
-        // 🔥 AJOUT DE LA BIO À LA SAUVEGARDE 🔥
         const bio = $("#profile-bio")?.value?.trim();
-        if (bio !== undefined) payload.bio = bio; // Accepte une bio vide pour pouvoir l'effacer
+        if (bio !== undefined) payload.bio = bio; 
 
         const password = $("#profile-password")?.value;
         if (password) {
@@ -367,7 +341,7 @@ function initProfile() {
                 const avatarData = await uploadFile("/api/me/avatar", formData);
                 const avatarImg = $("#profile-avatar");
                 if (avatarImg && avatarData.avatar_url) {
-                    avatarImg.src    = `${API_BASE}${avatarData.avatar_url}`;
+                    avatarImg.src    = `${API_BASE}${avatarData.avatar_url.replace('/api', '')}`;
                     avatarImg.hidden = false;
                 }
             }
@@ -382,9 +356,7 @@ function initProfile() {
             const fileInput = $("#profile-avatar-file");
             if (fileInput) fileInput.value = "";
 
-        } catch (error) {
-            showMessage(message, error.message, true);
-        }
+        } catch (error) { showMessage(message, error.message, true); }
     });
 
     $("#profile-logout")?.addEventListener("click", async () => {
@@ -392,15 +364,12 @@ function initProfile() {
         window.location.href = "/login";
     });
 
-    $("#profile-delete")?.addEventListener("click", () => {
-        window.location.href = "/delete-account";
-    });
+    $("#profile-delete")?.addEventListener("click", () => { window.location.href = "/delete-account"; });
 }
 
 function initForgotPassword() {
     const button = $("#forgot-submit");
     if (!button) return;
-
     button.addEventListener("click", async () => {
         const message = $("#forgot-message");
         try {
@@ -408,25 +377,20 @@ function initForgotPassword() {
                 method: "POST",
                 body: JSON.stringify({ email: $("#forgot-email")?.value?.trim() || "" }),
             });
-            showMessage(message, "Si cet email existe, un lien de réinitialisation a été envoyé. Vérifie tes spams.");
-        } catch (error) {
-            showMessage(message, error.message, true);
-        }
+            showMessage(message, "Si cet email existe, un lien a été envoyé. Vérifie tes spams.");
+        } catch (error) { showMessage(message, error.message, true); }
     });
 }
 
 function initResetPassword() {
     const button = $("#reset-submit");
     if (!button) return;
-
     const token   = new URLSearchParams(window.location.search).get('token');
     const message = $("#reset-message");
 
     if (!token) {
-        showMessage(message, "Le lien de réinitialisation est invalide ou introuvable.", true);
-        button.disabled      = true;
-        button.style.opacity = "0.5";
-        button.style.cursor  = "not-allowed";
+        showMessage(message, "Le lien de réinitialisation est invalide.", true);
+        button.disabled = true; button.style.opacity = "0.5"; button.style.cursor = "not-allowed";
         return;
     }
 
@@ -440,17 +404,15 @@ function initResetPassword() {
                     confirmPassword: $("#reset-confirm")?.value        || "",
                 }),
             });
-            showMessage(message, "Mot de passe mis à jour. Tu vas être redirigé vers la connexion.");
+            showMessage(message, "Mot de passe mis à jour. Redirection...");
             setTimeout(() => { window.location.href = "/login"; }, 2500);
-        } catch (error) {
-            showMessage(message, error.message, true);
-        }
+        } catch (error) { showMessage(message, error.message, true); }
     });
 }
 
 initHome();
-initLogin();
-initRegister();
-initProfile();
-initForgotPassword();
+initLogin(); 
+initRegister(); 
+initProfile(); 
+initForgotPassword(); 
 initResetPassword();
